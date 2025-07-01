@@ -45,21 +45,70 @@ character_builder:
         - XP-based leveling.
         - Milestone rewards.
       limits: Max 3 advances per trait.
-    xp_system:
-      exploration: 5-15 XP per new hex or unique feature.
-      monsters: 1 XP per creature HD.
-      treasure: 1 XP per Skott of loot.
-      level_thresholds:
-        2: 100
-        3: 300
-        4: 600
-        5: 1000
-        6: 1500
-        7: 2100
-        8: 2800
-        9: 3600
-        10: 4500
-        11: 5500
-        12: 6600
-        13: 7800
-        14: 9100
+      xp_system:
+        exploration: 5-15 XP per new hex or unique feature.
+        monsters: 1 XP per creature HD.
+        treasure: 1 XP per Skott of loot.
+        level_thresholds:
+          2: 100
+          3: 300
+          4: 600
+          5: 1000
+          6: 1500
+          7: 2100
+          8: 2800
+          9: 3600
+          10: 4500
+          11: 5500
+          12: 6600
+          13: 7800
+          14: 9100
+    item_shop:
+      weapons:
+        - name: Sword
+          damage: 1d8
+          cost_skott: 10
+        - name: Spear
+          damage: 1d6
+          cost_skott: 5
+        - name: Whip
+          damage: 1d4
+          cost_skott: 8
+          special: Can flagellate to remove 1 sin point
+        - name: Mace
+          damage: 1d6
+          cost_skott: 7
+        - name: Bow
+          damage: 1d8
+          cost_skott: 40
+        - name: Rifle
+          damage: 1d12
+          cost_skott: 200
+          special: Disadvantage if unbraced; ammo costs 5 Skott/shot
+        - name: Dagger
+          damage: 1d4
+          cost_skott: 2
+
+      armor:
+        - name: Quilted Armor
+          ac_bonus: '+1'
+          cost_skott: 10
+        - name: Cloth Armor
+          ac_bonus: '+0'
+          cost_skott: 5
+        - name: Scale Armor
+          ac_bonus: '+3'
+          cost_skott: 45
+        - name: Ink Armor
+          ac_bonus: '+2'
+          cost_skott: 30
+
+      helmet:
+        - name: Hood
+          cost_skott: 5
+        - name: Skull Helmet
+          cost_skott: 15
+        - name: Long Hair
+          cost_skott: 0
+        - name: Feather Headdress
+          cost_skott: 20

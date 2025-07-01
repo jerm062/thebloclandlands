@@ -24,6 +24,12 @@ or
 node terminals/guide.js
 ```
 
+To collaboratively record the story, run:
+
+```bash
+node terminals/story.js
+```
+
 Each line you enter is appended to `session.log` inside the respective data folder. Type `exit` to close the terminal.
 
 Set the `DATA_DIR` environment variable to change where data is stored (defaults to `./data`).
