@@ -21,7 +21,7 @@ async function autoLoadPlayer() {
     if (l.includes('backpack')) max += 4;
     if (l.includes('pouch')) max += 2;
   });
-  currentCharacter = { name, ...data, max_slots: max, encumbered: inv.length > max };
+  currentCharacter = { name, ...data, max_slots: max, encumber_limit: max + 2, encumbered: inv.length > max };
 }
 
 function append(text) {
@@ -170,6 +170,7 @@ function showStore(name, charData) {
       if (l.includes('backpack')) charData.max_slots += 4;
       if (l.includes('pouch')) charData.max_slots += 2;
     });
+    charData.encumber_limit = charData.max_slots + 2;
     charData.encumbered = charData.inventory.length > charData.max_slots;
 
     await fetch('/api/characters', {
@@ -212,6 +213,7 @@ async function createPlayerFromForm(e) {
     subclass_traits: fam.subclass_traits,
     hp: 6,
     sp: 0,
+    sin: 0,
     level: 1,
     inventory: []
   };
@@ -259,7 +261,7 @@ async function loadPlayer() {
     if (l.includes('backpack')) max += 4;
     if (l.includes('pouch')) max += 2;
   });
-  currentCharacter = { name, ...data, max_slots: max, encumbered: inv.length > max };
+  currentCharacter = { name, ...data, max_slots: max, encumber_limit: max + 2, encumbered: inv.length > max };
   localStorage.setItem('currentCharacter', name);
   append(`Loaded ${name}.`);
   showMenu('character');
@@ -316,11 +318,15 @@ function editPlayer(name, data) {
   const spField = document.createElement('div');
   spField.className = 'form-field';
   spField.innerHTML = `<label>SP</label><input id="sp" type="number" value="${data.sp || 0}" />`;
+  const sinField = document.createElement('div');
+  sinField.className = 'form-field';
+  sinField.innerHTML = `<label>Sin</label><input id="sin" type="number" value="${data.sin || 0}" />`;
   const invField = document.createElement('div');
   invField.className = 'form-field';
   invField.innerHTML = `<label>Inventory</label><input id="inv" type="text" value="${(data.inventory || []).join(', ')}" />`;
   form.appendChild(hpField);
   form.appendChild(spField);
+  form.appendChild(sinField);
   form.appendChild(invField);
 
   if (data.traits) {
@@ -342,6 +348,7 @@ function editPlayer(name, data) {
     const updates = {
       hp: parseInt(form.querySelector('#hp').value, 10),
       sp: parseInt(form.querySelector('#sp').value, 10),
+      sin: parseInt(form.querySelector('#sin').value, 10),
       inventory: form.querySelector('#inv').value.split(',').map(s => s.trim()).filter(Boolean)
     };
     if (data.traits) {
@@ -461,7 +468,8 @@ function showInventory() {
   output.innerHTML = '';
   const items = currentCharacter.inventory || [];
   const max = currentCharacter.max_slots || 12;
-  append(`Inventory (${items.length}/${max})` + (currentCharacter.encumbered ? ' - Encumbered!' : ''));
+  const limit = currentCharacter.encumber_limit || (max + 2);
+  append(`Inventory (${items.length}/${limit})` + (currentCharacter.encumbered ? ' - Encumbered!' : ''));
   if (items.length) {
     items.forEach(it => append('- ' + it));
   } else {
