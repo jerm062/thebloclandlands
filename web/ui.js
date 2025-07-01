@@ -7,6 +7,22 @@ const storyPanel = document.getElementById('story');
 let builderData = null;
 let currentCharacter = null;
 
+async function autoLoadPlayer() {
+  const name = localStorage.getItem('currentCharacter');
+  if (!name) return;
+  const res = await fetch('/api/characters?name=' + encodeURIComponent(name));
+  if (!res.ok) return;
+  const data = await res.json();
+  const inv = data.inventory || [];
+  let max = 12;
+  inv.forEach(it => {
+    const l = it.toLowerCase();
+    if (l.includes('backpack')) max += 4;
+    if (l.includes('pouch')) max += 2;
+  });
+  currentCharacter = { name, ...data, max_slots: max, encumbered: inv.length > max };
+}
+
 function append(text) {
   const p = document.createElement('p');
   p.textContent = text;
@@ -162,6 +178,7 @@ function showStore(name, charData) {
     });
 
     currentCharacter = { name, ...charData };
+    localStorage.setItem('currentCharacter', name);
     append(`Character '${name}' created.`);
     creator.style.display = 'none';
     output.style.display = '';
@@ -242,6 +259,7 @@ async function loadPlayer() {
     if (l.includes('pouch')) max += 2;
   });
   currentCharacter = { name, ...data, max_slots: max, encumbered: inv.length > max };
+  localStorage.setItem('currentCharacter', name);
   append(`Loaded ${name}.`);
   showMenu('character');
 }
@@ -372,6 +390,7 @@ const menus = {
     { text: 'Inventory', action: 'showInventory' },
     { text: 'Journal', action: 'showJournal' },
     { text: 'Map', action: 'showMap' },
+    { text: 'Caravan Party', action: 'showParty' },
     { text: 'Back', action: 'showMain' }
   ]
 };
@@ -440,6 +459,76 @@ function showMap() {
   output.style.display = '';
   output.innerHTML = '';
   append('Map feature coming soon.');
+}
+
+async function showParty() {
+  storyPanel.style.display = 'none';
+  output.style.display = '';
+  output.innerHTML = '';
+
+  if (!currentCharacter) {
+    append('Load a character first.');
+    return;
+  }
+
+  const party = await fetch('/api/party').then(r => r.json());
+
+  append('--- Caravan Party ---');
+  append('Members: ' + (party.members.join(', ') || 'None'));
+
+  const name = currentCharacter.name;
+  const isMember = party.members.includes(name);
+
+  if (isMember) {
+    const act = party.actions[name];
+    if (act) append('Your chosen action: ' + act);
+    const leave = document.createElement('button');
+    leave.className = 'menu-option';
+    leave.textContent = 'Leave Party';
+    leave.addEventListener('click', async () => {
+      await fetch('/api/party/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      showParty();
+    });
+    output.appendChild(leave);
+
+    ['travel', 'explore', 'hunt'].forEach(action => {
+      const btn = document.createElement('button');
+      btn.className = 'menu-option';
+      btn.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+      btn.addEventListener('click', async () => {
+        await fetch('/api/party/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, action })
+        });
+        showParty();
+      });
+      output.appendChild(btn);
+    });
+  } else {
+    const join = document.createElement('button');
+    join.className = 'menu-option';
+    join.textContent = 'Join Party';
+    join.addEventListener('click', async () => {
+      await fetch('/api/party/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      showParty();
+    });
+    output.appendChild(join);
+  }
+
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', () => showMenu('character'));
+  output.appendChild(back);
 }
 
 async function showStory() {
@@ -537,9 +626,12 @@ function handleAction(action) {
     case 'showStory':
       showStory();
       break;
+    case 'showParty':
+      showParty();
+      break;
     default:
       append(`Unknown action: ${action}`);
   }
 }
 
-showMenu('main');
+autoLoadPlayer().then(() => showMenu('main'));
