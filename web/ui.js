@@ -10,10 +10,18 @@ const hexMenu = document.getElementById('hex-menu');
 let builderData = null;
 let currentCharacter = null;
 
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://localhost:3000'
+  : '';
+
+function apiFetch(path, opts) {
+  return fetch(API_BASE + path, opts);
+}
+
 async function autoLoadPlayer() {
   const name = localStorage.getItem('currentCharacter');
   if (!name) return;
-  const res = await fetch('/api/characters?name=' + encodeURIComponent(name));
+  const res = await apiFetch('/api/characters?name=' + encodeURIComponent(name));
   if (!res.ok) return;
   const data = await res.json();
   const inv = data.inventory || [];
@@ -54,7 +62,7 @@ async function showCreatorForm() {
   creator.innerHTML = '';
 
   try {
-    const res = await fetch('/api/builder');
+    const res = await apiFetch('/api/builder');
     if (!res.ok) throw new Error('Failed to load');
     builderData = await res.json();
   } catch (err) {
@@ -204,7 +212,7 @@ function showStore(name, charData) {
     charData.encumber_limit = charData.max_slots + 2;
     charData.encumbered = charData.inventory.length > charData.max_slots;
 
-    await fetch('/api/characters', {
+    await apiFetch('/api/characters', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, data: charData })
@@ -279,7 +287,7 @@ async function createPlayerFromForm(e) {
 async function loadPlayer() {
   const name = prompt('Enter character name');
   if (!name) return;
-  const res = await fetch('/api/characters?name=' + encodeURIComponent(name));
+  const res = await apiFetch('/api/characters?name=' + encodeURIComponent(name));
   if (!res.ok) {
     append('Character not found.');
     return;
@@ -311,7 +319,7 @@ async function showPlayerManager() {
   storyPanel.style.display = 'none';
   guideEdit.innerHTML = '';
 
-  const chars = await fetch('/api/characters').then(r => r.json());
+  const chars = await apiFetch('/api/characters').then(r => r.json());
   Object.entries(chars).forEach(([name, data]) => {
     const row = document.createElement('div');
     row.className = 'form-field';
@@ -326,7 +334,7 @@ async function showPlayerManager() {
     delBtn.textContent = 'Delete';
     delBtn.addEventListener('click', async () => {
       if (!confirm('Delete ' + name + '?')) return;
-      await fetch('/api/characters?name=' + encodeURIComponent(name), { method: 'DELETE' });
+      await apiFetch('/api/characters?name=' + encodeURIComponent(name), { method: 'DELETE' });
       showPlayerManager();
     });
     row.appendChild(label);
@@ -394,7 +402,7 @@ function editPlayer(name, data) {
         updates.traits[t] = parseInt(form.querySelector(`[name=trait-${t}]`).value, 10);
       });
     }
-    await fetch('/api/characters?name=' + encodeURIComponent(name), {
+    await apiFetch('/api/characters?name=' + encodeURIComponent(name), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
@@ -418,7 +426,7 @@ function editPlayer(name, data) {
     const goldStr = prompt('Gold amount') || '0';
     const items = itemsStr.split(',').map(s => s.trim()).filter(Boolean);
     const gold = parseInt(goldStr, 10) || 0;
-    await fetch('/api/offers', {
+    await apiFetch('/api/offers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, items, gold })
@@ -534,7 +542,7 @@ function showMap() {
   output.style.display = '';
   output.innerHTML = '';
   const current = localStorage.getItem('currentHex') || '001';
-  fetch('/api/hexes').then(r => r.json()).then(all => {
+  apiFetch('/api/hexes').then(r => r.json()).then(all => {
     const grid = document.createElement('div');
     grid.id = 'player-map';
     grid.style.display = 'grid';
@@ -582,7 +590,7 @@ async function showParty() {
   output.innerHTML = '';
 
   const isGuide = !currentCharacter;
-  const party = await fetch('/api/party').then(r => r.json());
+  const party = await apiFetch('/api/party').then(r => r.json());
 
   append('--- Caravan Party ---');
   append('Members: ' + (party.members.join(', ') || 'None'));
@@ -597,7 +605,7 @@ async function showParty() {
     rollBtn.className = 'menu-option';
     rollBtn.textContent = 'Guide: Roll Travel Event';
     rollBtn.addEventListener('click', async () => {
-      const res = await fetch('/api/party/travel-roll', { method: 'POST' });
+      const res = await apiFetch('/api/party/travel-roll', { method: 'POST' });
       const data = await res.json();
       if (data.result) append('Travel Event: ' + data.result);
       showParty();
@@ -616,7 +624,7 @@ async function showParty() {
       leave.className = 'menu-option';
       leave.textContent = 'Leave Party';
       leave.addEventListener('click', async () => {
-        await fetch('/api/party/leave', {
+        await apiFetch('/api/party/leave', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
@@ -634,13 +642,13 @@ async function showParty() {
           if (action === 'travel') {
             desc = prompt('Describe your travel action') || '';
           }
-          await fetch('/api/party/action', {
+          await apiFetch('/api/party/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, action })
           });
           if (desc) {
-            await fetch('/api/story', {
+            await apiFetch('/api/story', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ role: name, text: desc })
@@ -655,7 +663,7 @@ async function showParty() {
       join.className = 'menu-option';
       join.textContent = 'Join Party';
       join.addEventListener('click', async () => {
-        await fetch('/api/party/join', {
+        await apiFetch('/api/party/join', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
@@ -711,7 +719,7 @@ function showHexMenu() {
 }
 
 async function showHexList() {
-  const hx = await fetch('/api/hexes').then(r => r.json());
+  const hx = await apiFetch('/api/hexes').then(r => r.json());
   hexContent.innerHTML = '';
   for (let i = 1; i <= 25; i++) {
     const num = i.toString().padStart(3, '0');
@@ -730,10 +738,10 @@ async function showHexList() {
 }
 
 async function editHex(num) {
-  const all = await fetch('/api/hexes').then(r => r.json());
+  const all = await apiFetch('/api/hexes').then(r => r.json());
   let hx = all[num];
   if (!hx) {
-    hx = await fetch('/api/hex/generate?hex=' + num).then(r => r.json());
+    hx = await apiFetch('/api/hex/generate?hex=' + num).then(r => r.json());
   }
   hx.notes = hx.notes || '';
   hx.markers = hx.markers || {};
@@ -763,7 +771,7 @@ async function editHex(num) {
   genBtn.type = 'button';
   genBtn.textContent = 'Generate';
   genBtn.addEventListener('click', async () => {
-    hx = await fetch('/api/hex/generate?hex=' + num).then(r => r.json());
+    hx = await apiFetch('/api/hex/generate?hex=' + num).then(r => r.json());
     renderInfo();
   });
   form.appendChild(genBtn);
@@ -811,7 +819,7 @@ async function editHex(num) {
     marks.forEach(([m]) => {
       data.markers[m] = form.querySelector(`[name="mark-${m}"]`).checked;
     });
-    await fetch('/api/hex/save', {
+    await apiFetch('/api/hex/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -828,7 +836,7 @@ async function editHex(num) {
 }
 
 async function showHexMap() {
-  const hx = await fetch('/api/hexes').then(r => r.json());
+  const hx = await apiFetch('/api/hexes').then(r => r.json());
   hexContent.innerHTML = '';
   const grid = document.createElement('div');
   grid.id = 'hex-grid';
@@ -865,7 +873,7 @@ async function showOffers() {
     return;
   }
   const name = currentCharacter.name;
-  const offers = await fetch('/api/offers?name=' + encodeURIComponent(name)).then(r => r.json());
+  const offers = await apiFetch('/api/offers?name=' + encodeURIComponent(name)).then(r => r.json());
   if (!offers.length) {
     append('No offers available.');
   } else {
@@ -875,12 +883,12 @@ async function showOffers() {
       btn.className = 'menu-option';
       btn.textContent = 'Take';
       btn.addEventListener('click', async () => {
-        await fetch('/api/offers/claim', {
+        await apiFetch('/api/offers/claim', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, index: i })
         });
-        const updated = await fetch('/api/characters?name=' + encodeURIComponent(name)).then(r => r.json());
+        const updated = await apiFetch('/api/characters?name=' + encodeURIComponent(name)).then(r => r.json());
         currentCharacter = { name, ...updated };
         showOffers();
       });
@@ -901,7 +909,7 @@ async function showStory() {
   menu.style.display = 'flex';
   storyPanel.style.display = 'block';
   storyPanel.innerHTML = '';
-  const res = await fetch('/api/story');
+  const res = await apiFetch('/api/story');
   const text = await res.text();
   const lines = text.trim() ? text.trim().split('\n') : [];
   lines.forEach(line => {
@@ -933,7 +941,7 @@ async function showStory() {
     const txtEl = form.querySelector('#story-text');
     const line = txtEl.value.trim();
     if (!line) return;
-    await fetch('/api/story', {
+    await apiFetch('/api/story', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role, text: line })

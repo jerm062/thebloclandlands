@@ -27,6 +27,11 @@ body {
   gap: 1rem;
 }
 
+/* Ensure the menu always stays on the right */
+#menu {
+  order: 2;
+}
+
 #creator {
   flex: 2 1 70%;
 }
@@ -36,6 +41,7 @@ body {
 }
 
 .panel {
+  order: 1;
   background: #26232f;
   padding: 1rem;
   border: 2px solid #4c4668;
