@@ -4,6 +4,8 @@ const creator = document.getElementById('creator');
 const guideEdit = document.getElementById('guide-edit');
 const storyPanel = document.getElementById('story');
 const hexGenPanel = document.getElementById('hex-gen');
+const hexContent = document.getElementById('hex-content');
+const hexMenu = document.getElementById('hex-menu');
 
 let builderData = null;
 let currentCharacter = null;
@@ -400,7 +402,7 @@ const menus = {
     { text: 'Rulebook', action: 'showRulebook' }
   ],
   player: [
-    { text: 'New Player', action: 'newPlayer' },
+    { text: 'New Character', action: 'newPlayer' },
     { text: 'Load Game', action: 'loadPlayer' },
     { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
@@ -646,52 +648,53 @@ function showHexMenu() {
   creator.style.display = 'none';
   guideEdit.style.display = 'none';
   storyPanel.style.display = 'none';
-  hexGenPanel.style.display = 'block';
-  hexGenPanel.innerHTML = '';
+  hexGenPanel.style.display = 'flex';
+  hexContent.innerHTML = '';
+  hexMenu.innerHTML = '';
 
   const gen = document.createElement('button');
   gen.className = 'menu-option';
   gen.textContent = 'Generate Hex';
   gen.addEventListener('click', showHexGenerator);
-  hexGenPanel.appendChild(gen);
+  hexMenu.appendChild(gen);
 
   const list = document.createElement('button');
   list.className = 'menu-option';
   list.textContent = 'Hex List';
   list.addEventListener('click', showHexList);
-  hexGenPanel.appendChild(list);
+  hexMenu.appendChild(list);
 
   const map = document.createElement('button');
   map.className = 'menu-option';
   map.textContent = 'Hex Map';
   map.addEventListener('click', showHexMap);
-  hexGenPanel.appendChild(map);
+  hexMenu.appendChild(map);
 
   const back = document.createElement('button');
   back.className = 'menu-option';
   back.textContent = 'Back';
   back.addEventListener('click', () => {
     hexGenPanel.style.display = 'none';
-    showHexMenu();
+    showMenu('guide');
   });
-  hexGenPanel.appendChild(back);
+  hexMenu.appendChild(back);
 }
 
 async function showHexList() {
   const hx = await fetch('/api/hexes').then(r => r.json());
-  hexGenPanel.innerHTML = '';
+  hexContent.innerHTML = '';
   Object.keys(hx).sort().forEach(num => {
     const btn = document.createElement('button');
     btn.className = 'menu-option';
     btn.textContent = num;
     btn.addEventListener('click', () => editHex(num));
-    hexGenPanel.appendChild(btn);
+    hexContent.appendChild(btn);
   });
   const back = document.createElement('button');
   back.className = 'menu-option';
   back.textContent = 'Back';
   back.addEventListener('click', showHexMenu);
-  hexGenPanel.appendChild(back);
+  hexContent.appendChild(back);
 }
 
 function editHex(num) {
@@ -700,7 +703,7 @@ function editHex(num) {
     .then(all => {
       const hx = all[num];
       if (!hx) return;
-      hexGenPanel.innerHTML = '';
+      hexContent.innerHTML = '';
       const form = document.createElement('form');
       Object.entries(hx).forEach(([k, v]) => {
         const f = document.createElement('div');
@@ -723,35 +726,39 @@ function editHex(num) {
         });
         showHexList();
       });
-      hexGenPanel.appendChild(form);
+      hexContent.appendChild(form);
       const back = document.createElement('button');
       back.className = 'menu-option';
       back.textContent = 'Back';
       back.addEventListener('click', showHexList);
-      hexGenPanel.appendChild(back);
+      hexContent.appendChild(back);
     });
 }
 
 function showHexMap() {
-  hexGenPanel.innerHTML = '';
+  hexContent.innerHTML = '';
   const grid = document.createElement('div');
   grid.id = 'hex-grid';
-  grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
-  for (let i = 1; i <= 25; i++) {
-    const num = i.toString().padStart(3, '0');
-    const cell = document.createElement('button');
-    cell.className = 'menu-option';
-    cell.textContent = num;
-    cell.addEventListener('click', () => editHex(num));
-    grid.appendChild(cell);
+  for (let r = 0; r < 5; r++) {
+    const row = document.createElement('div');
+    row.className = 'hex-row';
+    if (r % 2 === 1) row.classList.add('offset');
+    for (let c = 0; c < 5; c++) {
+      const num = (r * 5 + c + 1).toString().padStart(3, '0');
+      const cell = document.createElement('div');
+      cell.className = 'hex-cell';
+      cell.textContent = num;
+      cell.addEventListener('click', () => editHex(num));
+      row.appendChild(cell);
+    }
+    grid.appendChild(row);
   }
-  hexGenPanel.appendChild(grid);
+  hexContent.appendChild(grid);
   const back = document.createElement('button');
   back.className = 'menu-option';
   back.textContent = 'Back';
   back.addEventListener('click', showHexMenu);
-  hexGenPanel.appendChild(back);
+  hexContent.appendChild(back);
 }
 
 async function showHexGenerator() {
@@ -759,17 +766,18 @@ async function showHexGenerator() {
   creator.style.display = 'none';
   guideEdit.style.display = 'none';
   storyPanel.style.display = 'none';
-  hexGenPanel.style.display = 'block';
-  hexGenPanel.innerHTML = '';
+  hexGenPanel.style.display = 'flex';
+  hexContent.innerHTML = '';
+  hexMenu.innerHTML = '';
 
   const genBtn = document.createElement('button');
   genBtn.className = 'menu-option';
   genBtn.textContent = 'Generate Hex';
-  hexGenPanel.appendChild(genBtn);
+  hexMenu.appendChild(genBtn);
 
   const form = document.createElement('form');
   form.style.display = 'none';
-  hexGenPanel.appendChild(form);
+  hexContent.appendChild(form);
 
   genBtn.addEventListener('click', async () => {
     const hx = await fetch('/api/hex/generate').then(r => r.json());
@@ -796,7 +804,7 @@ async function showHexGenerator() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    hexGenPanel.innerHTML = 'Saved.';
+    hexContent.innerHTML = 'Saved.';
   });
 
   const back = document.createElement('button');
@@ -806,7 +814,7 @@ async function showHexGenerator() {
     hexGenPanel.style.display = 'none';
     showMenu('guide');
   });
-  hexGenPanel.appendChild(back);
+  hexMenu.appendChild(back);
 }
 
 async function showOffers() {
