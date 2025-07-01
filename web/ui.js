@@ -476,6 +476,19 @@ async function showParty() {
   append('--- Caravan Party ---');
   append('Members: ' + (party.members.join(', ') || 'None'));
 
+  if (party.pending === 'travel') {
+    const rollBtn = document.createElement('button');
+    rollBtn.className = 'menu-option';
+    rollBtn.textContent = 'Guide: Roll Travel Event';
+    rollBtn.addEventListener('click', async () => {
+      const res = await fetch('/api/party/travel-roll', { method: 'POST' });
+      const data = await res.json();
+      if (data.result) append('Travel Event: ' + data.result);
+      showParty();
+    });
+    output.appendChild(rollBtn);
+  }
+
   const name = currentCharacter.name;
   const isMember = party.members.includes(name);
 

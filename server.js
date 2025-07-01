@@ -10,9 +10,11 @@ const partyPath = path.join(dataDir, 'party.json');
 
 function loadParty() {
   try {
-    return JSON.parse(fs.readFileSync(partyPath, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(partyPath, 'utf8'));
+    if (!('pending' in data)) data.pending = null;
+    return data;
   } catch {
-    return { members: [], actions: {} };
+    return { members: [], actions: {}, pending: null };
   }
 }
 
@@ -144,6 +146,7 @@ const server = http.createServer((req, res) => {
           const storyPath = path.join(dataDir, 'story.txt');
           fs.appendFileSync(storyPath, line + '\n', 'utf8');
           party.actions = {};
+          if (allTravel) party.pending = 'travel';
           saveParty(party);
         }
 
@@ -154,6 +157,31 @@ const server = http.createServer((req, res) => {
         res.end('Failed to set action');
       }
     });
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/party/travel-roll') {
+    const party = loadParty();
+    if (party.pending !== 'travel') {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No travel roll pending' }));
+      return;
+    }
+    const events = [
+      'Wild Encounter',
+      'Human Encounter',
+      'Environment',
+      'Loss',
+      'Exhaustion',
+      'Discovery'
+    ];
+    const result = events[Math.floor(Math.random() * 6)];
+    const storyPath = path.join(dataDir, 'story.txt');
+    fs.appendFileSync(storyPath, `System: Travel event result - ${result}\n`, 'utf8');
+    party.pending = null;
+    saveParty(party);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ result }));
     return;
   }
 
