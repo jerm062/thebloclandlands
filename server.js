@@ -36,6 +36,29 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && req.url.startsWith('/api/characters')) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const name = urlObj.searchParams.get('name');
+    const charPath = path.join(dataDir, 'characters.yaml');
+    try {
+      const chars = fs.existsSync(charPath)
+        ? yaml.load(fs.readFileSync(charPath, 'utf8')) || {}
+        : {};
+      const result = name ? chars[name] : chars;
+      if (!result) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Character not found');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Failed to load character');
+    }
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/api/characters') {
     let body = '';
     req.on('data', chunk => (body += chunk));
