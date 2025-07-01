@@ -1,2 +1,2 @@
-const run = require('../lib/terminal');
-run('player');
+const runPlayer = require('../lib/player');
+runPlayer();
