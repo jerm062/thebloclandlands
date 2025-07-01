@@ -1,0 +1,59 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #1b1a24;
+  color: #e0e0e0;
+  font-family: 'Pixelify Sans', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+#container {
+  width: 960px;
+  max-width: 90%;
+}
+
+#title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+#game {
+  display: flex;
+  gap: 1rem;
+}
+
+.panel {
+  background: #26232f;
+  padding: 1rem;
+  border: 2px solid #4c4668;
+  height: 400px;
+  overflow-y: auto;
+}
+
+#output {
+  flex: 2 1 70%;
+}
+
+#menu {
+  flex: 1 1 30%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menu-option {
+  font-family: inherit;
+  padding: 0.5rem;
+  background: #3b364d;
+  color: #e0e0e0;
+  border: 2px solid #4c4668;
+  cursor: pointer;
+}
+
+.menu-option:hover {
+  background: #4c4668;
+}
