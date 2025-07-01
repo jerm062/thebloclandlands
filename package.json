@@ -3,7 +3,7 @@
   "scripts": {
     "player": "node terminals/player.js",
     "guide": "node terminals/guide.js",
-    "start": "node terminals/player.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
