@@ -26,3 +26,10 @@ Player characters are stored in `data/characters.yaml`. When `player.js` runs,
 enter a character name. If the name is not found, the character builder will
 prompt for choices defined in `data/character_builder.yaml` and save the new
 character before starting the player terminal.
+
+## Web UI
+
+A basic web interface is provided in the `web` directory. Open `web/index.html`
+ in a browser to try a simple menu styled in the spirit of classic text RPGs.
+The UI uses the [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans)
+font from Google Fonts.
