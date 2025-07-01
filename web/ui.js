@@ -132,6 +132,14 @@ function showStore(name, charData) {
       }
     });
 
+    charData.max_slots = 12;
+    charData.inventory.forEach(it => {
+      const l = it.toLowerCase();
+      if (l.includes('backpack')) charData.max_slots += 4;
+      if (l.includes('pouch')) charData.max_slots += 2;
+    });
+    charData.encumbered = charData.inventory.length > charData.max_slots;
+
     await fetch('/api/characters', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -189,6 +197,15 @@ async function createPlayerFromForm(e) {
     charData.traits[t] = 5;
   });
 
+  if (builderData.starting_gear && builderData.starting_gear.universal_items) {
+    builderData.starting_gear.universal_items.forEach(it => {
+      let itemName = it.name;
+      if (it.quantity) itemName += ` x${it.quantity}`;
+      if (it.durability) itemName += ` (${it.durability})`;
+      charData.inventory.push(itemName);
+    });
+  }
+
   currentCharacter = { name, ...charData };
   showStore(name, charData);
 }
@@ -202,7 +219,14 @@ async function loadPlayer() {
     return;
   }
   const data = await res.json();
-  currentCharacter = { name, ...data };
+  const inv = data.inventory || [];
+  let max = 12;
+  inv.forEach(it => {
+    const l = it.toLowerCase();
+    if (l.includes('backpack')) max += 4;
+    if (l.includes('pouch')) max += 2;
+  });
+  currentCharacter = { name, ...data, max_slots: max, encumbered: inv.length > max };
   append(`Loaded ${name}.`);
   showMenu('character');
 }
@@ -373,7 +397,13 @@ function showInventory() {
   }
   output.innerHTML = '';
   const items = currentCharacter.inventory || [];
-  append('Inventory: ' + (items.length ? items.join(', ') : 'Empty'));
+  const max = currentCharacter.max_slots || 12;
+  append(`Inventory (${items.length}/${max})` + (currentCharacter.encumbered ? ' - Encumbered!' : ''));
+  if (items.length) {
+    items.forEach(it => append('- ' + it));
+  } else {
+    append('Empty');
+  }
 }
 
 function showJournal() {

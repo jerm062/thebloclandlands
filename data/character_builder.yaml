@@ -122,3 +122,29 @@ character_builder:
           cost_skott: 0
         - name: Feather Headdress
           cost_skott: 20
+
+    starting_gear:
+      universal_items:
+        - name: Rations
+          quantity: 3
+        - name: Bedroll
+          durability: average
+        - name: Tent
+          durability: average
+        - name: Pouch
+          slots: "+2 inventory slots"
+        - name: Backpack
+          slots: "+6 inventory slots"
+        - name: Lantern
+          durability: average
+        - name: Flint Box
+      durability_rules:
+        description: >
+          Items with durability (e.g., tent, bedroll, lantern) start at average condition. Exposure to harsh weather, poor storage, or overuse may reduce durability to poor. Once at poor, any additional damage or neglect destroys the item.
+        ratings:
+          - Good: fully functional, no penalties.
+          - Average: standard starting condition.
+          - Poor: disadvantage when using item, e.g., tent leaks; must repair soon.
+        repair:
+          requirement: Characters with Repair trait may attempt repair.
+          mechanic: Roll d6; 5-6 restores item from poor to average, or average to good. Failed repairs have no effect.
