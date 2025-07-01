@@ -1,0 +1,129 @@
+hex_generator:
+  next_hex_number: 001
+  create_hex:
+    description: >
+      Generate a new hex by rolling biome, terrain, and region quality, then customize or edit details as desired.
+    biome_table:
+      1: Desert
+      2: Plains
+      3: Forest
+      4: Swamp
+      5: Hills
+      6: Mountains
+    terrain_features:
+      d20:
+        1: Cliffs
+        2: Hills
+        3: Ponds
+        4: Caverns
+        5: Ravines
+        6: Stone Formations
+        7: Sinkholes
+        8: Rocky Outcrops
+        9: Ancient Bridges
+        10: Gullies
+        11: Trails
+        12: Ruins
+        13: Riverbanks
+        14: Small Canyons
+        15: Springs
+        16: Caves
+        17: Campsites
+        18: Statues
+        19: Monoliths
+        20: Thickets
+    region_qualities:
+      d20:
+        1: Ashen
+        2: Forsaken
+        3: Gloomy
+        4: Verdant
+        5: Misty
+        6: Stagnant
+        7: Windswept
+        8: Parched
+        9: Haunted
+        10: Blighted
+        11: Sacred
+        12: Festering
+        13: Serene
+        14: Ominous
+        15: Whispering
+        16: Frozen
+        17: Boiling
+        18: Moonlit
+        19: Shadowed
+        20: Radiant
+  add_info_to_hex:
+    description: >
+      After generating a hex, click "Add to Hex" to confirm it, or edit any fields before finalizing. All hex info is editable by the Guide.
+  random_tables:
+    flora:
+      d6:
+        1: Broadleaf Shrubs
+        2: Small Ferns
+        3: Low Grasses
+        4: Thorny Bushes
+        5: Twisted Saplings
+        6: Hardy Moss
+    fauna:
+      d6:
+        1: Small Mammals
+        2: Birds of Prey
+        3: Insects
+        4: Reptiles
+        5: Amphibians
+        6: Large Herbivores
+    fish:
+      d6:
+        1: Small Fish
+        2: Mudfish
+        3: Long-bodied Fish
+        4: Wide-mouthed Fish
+        5: Spiny Fish
+        6: Slender Eels
+  animal_feature_table:
+    d100:
+      1: Albino coloring
+      2: Unusually large eyes
+      3: Glowing patches
+      4: Extra limbs
+      5: Horns or antlers
+      6: Bioluminescent spots
+      7: Feathered hide
+      8: Translucent skin
+      9: Iridescent scales
+      10: Missing eyes
+      11: Stone-like hide
+      12: Shadowy form
+      13: Extra tails
+      14: Oversized claws
+      15: Rotting odor
+      16: Metallic sheen
+      17: Burning scent
+      18: Whistling breath
+      19: Shimmering fur
+      20: Forked tongue
+      21-100: Guide chooses or invents unique feature
+  flora_feature_table:
+    d20:
+      1: Thorny
+      2: Sweet-smelling
+      3: Emits spores
+      4: Changes color
+      5: Sticky sap
+      6: Glows at night
+      7: Emits faint sound
+      8: Unusual growth patterns
+      9: Rapidly wilts and regrows
+      10: Covered in fungus
+      11: Hides insects
+      12: Poisonous to touch
+      13: Fruit-bearing
+      14: Soft and spongy
+      15: Barklike leaves
+      16: Twists toward movement
+      17: Exudes warmth
+      18: Smells of decay
+      19: Crystalline structures
+      20: Guide chooses or invents feature

@@ -3,6 +3,7 @@ const menu = document.getElementById('menu');
 const creator = document.getElementById('creator');
 const guideEdit = document.getElementById('guide-edit');
 const storyPanel = document.getElementById('story');
+const hexGenPanel = document.getElementById('hex-gen');
 
 let builderData = null;
 let currentCharacter = null;
@@ -364,6 +365,24 @@ function editPlayer(name, data) {
   cancel.addEventListener('click', showPlayerManager);
   form.appendChild(cancel);
 
+  const offer = document.createElement('button');
+  offer.className = 'menu-option';
+  offer.textContent = 'Offer Items/Gold';
+  offer.type = 'button';
+  offer.addEventListener('click', async () => {
+    const itemsStr = prompt('Items (comma separated)') || '';
+    const goldStr = prompt('Gold amount') || '0';
+    const items = itemsStr.split(',').map(s => s.trim()).filter(Boolean);
+    const gold = parseInt(goldStr, 10) || 0;
+    await fetch('/api/offers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, items, gold })
+    });
+    alert('Offer sent');
+  });
+  form.appendChild(offer);
+
   guideEdit.appendChild(form);
 }
 
@@ -382,12 +401,15 @@ const menus = {
   guide: [
     { text: 'Start Guide Session', action: 'startGuide' },
     { text: 'Manage Players', action: 'managePlayers' },
+    { text: 'Caravan Party', action: 'showParty' },
+    { text: 'Hex Generator', action: 'showHexGen' },
     { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
   ],
   character: [
     { text: 'Character Sheet', action: 'showSheet' },
     { text: 'Inventory', action: 'showInventory' },
+    { text: 'Check Offers', action: 'showOffers' },
     { text: 'Journal', action: 'showJournal' },
     { text: 'Map', action: 'showMap' },
     { text: 'Caravan Party', action: 'showParty' },
@@ -466,15 +488,16 @@ async function showParty() {
   output.style.display = '';
   output.innerHTML = '';
 
-  if (!currentCharacter) {
-    append('Load a character first.');
-    return;
-  }
-
+  const isGuide = !currentCharacter;
   const party = await fetch('/api/party').then(r => r.json());
 
   append('--- Caravan Party ---');
   append('Members: ' + (party.members.join(', ') || 'None'));
+
+  if (isGuide && Object.keys(party.actions).length) {
+    append('Chosen Actions:');
+    Object.entries(party.actions).forEach(([n, a]) => append(`${n}: ${a}`));
+  }
 
   if (party.pending === 'travel') {
     const rollBtn = document.createElement('button');
@@ -489,54 +512,155 @@ async function showParty() {
     output.appendChild(rollBtn);
   }
 
-  const name = currentCharacter.name;
-  const isMember = party.members.includes(name);
+  if (!isGuide) {
+    const name = currentCharacter.name;
+    const isMember = party.members.includes(name);
 
-  if (isMember) {
-    const act = party.actions[name];
-    if (act) append('Your chosen action: ' + act);
-    const leave = document.createElement('button');
-    leave.className = 'menu-option';
-    leave.textContent = 'Leave Party';
-    leave.addEventListener('click', async () => {
-      await fetch('/api/party/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      showParty();
-    });
-    output.appendChild(leave);
-
-    ['travel', 'explore', 'hunt'].forEach(action => {
-      const btn = document.createElement('button');
-      btn.className = 'menu-option';
-      btn.textContent = action.charAt(0).toUpperCase() + action.slice(1);
-      btn.addEventListener('click', async () => {
-        await fetch('/api/party/action', {
+    if (isMember) {
+      const act = party.actions[name];
+      if (act) append('Your chosen action: ' + act);
+      const leave = document.createElement('button');
+      leave.className = 'menu-option';
+      leave.textContent = 'Leave Party';
+      leave.addEventListener('click', async () => {
+        await fetch('/api/party/leave', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, action })
+          body: JSON.stringify({ name })
         });
         showParty();
       });
+      output.appendChild(leave);
+
+      ['travel', 'explore', 'hunt'].forEach(action => {
+        const btn = document.createElement('button');
+        btn.className = 'menu-option';
+        btn.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+        btn.addEventListener('click', async () => {
+          await fetch('/api/party/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, action })
+          });
+          showParty();
+        });
+        output.appendChild(btn);
+      });
+    } else {
+      const join = document.createElement('button');
+      join.className = 'menu-option';
+      join.textContent = 'Join Party';
+      join.addEventListener('click', async () => {
+        await fetch('/api/party/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        showParty();
+      });
+      output.appendChild(join);
+    }
+
+    const back = document.createElement('button');
+    back.className = 'menu-option';
+    back.textContent = 'Back';
+    back.addEventListener('click', () => showMenu('character'));
+    output.appendChild(back);
+  } else {
+    const back = document.createElement('button');
+    back.className = 'menu-option';
+    back.textContent = 'Back';
+    back.addEventListener('click', () => showMenu('guide'));
+    output.appendChild(back);
+  }
+}
+
+async function showHexGenerator() {
+  output.style.display = 'none';
+  creator.style.display = 'none';
+  guideEdit.style.display = 'none';
+  storyPanel.style.display = 'none';
+  hexGenPanel.style.display = 'block';
+  hexGenPanel.innerHTML = '';
+
+  const genBtn = document.createElement('button');
+  genBtn.className = 'menu-option';
+  genBtn.textContent = 'Generate Hex';
+  hexGenPanel.appendChild(genBtn);
+
+  const form = document.createElement('form');
+  form.style.display = 'none';
+  hexGenPanel.appendChild(form);
+
+  genBtn.addEventListener('click', async () => {
+    const hx = await fetch('/api/hex/generate').then(r => r.json());
+    form.innerHTML = '';
+    form.style.display = 'block';
+    Object.entries(hx).forEach(([k, v]) => {
+      const f = document.createElement('div');
+      f.className = 'form-field';
+      f.innerHTML = `<label>${k}</label><input name="${k}" value="${v}" />`;
+      form.appendChild(f);
+    });
+    const submit = document.createElement('button');
+    submit.className = 'menu-option';
+    submit.textContent = 'Add to Hex';
+    form.appendChild(submit);
+  });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {};
+    new FormData(form).forEach((v, k) => (data[k] = v));
+    await fetch('/api/hex/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    hexGenPanel.innerHTML = 'Saved.';
+  });
+
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', () => {
+    hexGenPanel.style.display = 'none';
+    showMenu('guide');
+  });
+  hexGenPanel.appendChild(back);
+}
+
+async function showOffers() {
+  storyPanel.style.display = 'none';
+  output.style.display = '';
+  output.innerHTML = '';
+  if (!currentCharacter) {
+    append('No character loaded.');
+    return;
+  }
+  const name = currentCharacter.name;
+  const offers = await fetch('/api/offers?name=' + encodeURIComponent(name)).then(r => r.json());
+  if (!offers.length) {
+    append('No offers available.');
+  } else {
+    offers.forEach((o, i) => {
+      append(`Offer ${i + 1}: ${(o.items || []).join(', ')} ${o.gold ? 'Gold: ' + o.gold : ''}`);
+      const btn = document.createElement('button');
+      btn.className = 'menu-option';
+      btn.textContent = 'Take';
+      btn.addEventListener('click', async () => {
+        await fetch('/api/offers/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, index: i })
+        });
+        const updated = await fetch('/api/characters?name=' + encodeURIComponent(name)).then(r => r.json());
+        currentCharacter = { name, ...updated };
+        showOffers();
+      });
       output.appendChild(btn);
     });
-  } else {
-    const join = document.createElement('button');
-    join.className = 'menu-option';
-    join.textContent = 'Join Party';
-    join.addEventListener('click', async () => {
-      await fetch('/api/party/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      showParty();
-    });
-    output.appendChild(join);
   }
-
   const back = document.createElement('button');
   back.className = 'menu-option';
   back.textContent = 'Back';
@@ -566,6 +690,8 @@ async function showStory() {
       <select id="story-role">
         <option value="Player">Player</option>
         <option value="Guide">Guide</option>
+        <option value="Character">Character</option>
+        <option value="Story">Story</option>
       </select>
     </div>
     <div class="form-field">
@@ -635,6 +761,12 @@ function handleAction(action) {
       break;
     case 'showMap':
       showMap();
+      break;
+    case 'showHexGen':
+      showHexGenerator();
+      break;
+    case 'showOffers':
+      showOffers();
       break;
     case 'showStory':
       showStory();
