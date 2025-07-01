@@ -12,6 +12,9 @@ const partyPath = path.join(dataDir, 'party.json');
 const offersPath = path.join(dataDir, 'offers.json');
 const hexGenPath = path.join(dataDir, 'hex_generator.yaml');
 const hexesPath = path.join(dataDir, 'hexes.yaml');
+const defaultHexGen = yaml.load(
+  fs.readFileSync(path.join(__dirname, 'data', 'hex_generator.yaml'), 'utf8')
+);
 
 function loadParty() {
   try {
@@ -41,10 +44,10 @@ function saveOffers(o) {
 
 function loadHexGen() {
   try {
-    return yaml.load(fs.readFileSync(hexGenPath, 'utf8'));
-  } catch {
-    return { hex_generator: { next_hex_number: '001' } };
-  }
+    const data = yaml.load(fs.readFileSync(hexGenPath, 'utf8'));
+    if (data && data.hex_generator) return data;
+  } catch {}
+  return defaultHexGen;
 }
 
 function saveHexGen(data) {
