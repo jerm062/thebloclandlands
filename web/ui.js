@@ -92,11 +92,13 @@ function showStore(name, charData) {
   const form = document.createElement('form');
   form.id = 'storeForm';
 
-  Object.entries(builderData.item_shop).forEach(([cat, items]) => {
+  const selectLists = [];
+
+  function addSelect(labelText, items) {
     const field = document.createElement('div');
     field.className = 'form-field';
     const label = document.createElement('label');
-    label.textContent = `Choose ${cat}`;
+    label.textContent = `Choose ${labelText}`;
     const select = document.createElement('select');
     const none = document.createElement('option');
     none.value = '';
@@ -112,6 +114,17 @@ function showStore(name, charData) {
     field.appendChild(label);
     field.appendChild(select);
     form.appendChild(field);
+    selectLists.push(items);
+  }
+
+  Object.entries(builderData.item_shop).forEach(([cat, items]) => {
+    if (Array.isArray(items)) {
+      addSelect(cat, items);
+    } else if (items && typeof items === 'object') {
+      Object.entries(items).forEach(([sub, subItems]) => {
+        addSelect(`${cat} ${sub}`, subItems);
+      });
+    }
   });
 
   const finishBtn = document.createElement('button');
@@ -123,7 +136,7 @@ function showStore(name, charData) {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     let idx = 0;
-    Object.entries(builderData.item_shop).forEach(([cat, items]) => {
+    selectLists.forEach(items => {
       const select = form.querySelectorAll('select')[idx++];
       const choice = select.value;
       if (choice) {
