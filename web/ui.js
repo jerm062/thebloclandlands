@@ -85,6 +85,66 @@ async function showCreatorForm() {
   form.addEventListener('submit', createPlayerFromForm);
 }
 
+function showStore(name, charData) {
+  creator.innerHTML = '';
+  const form = document.createElement('form');
+  form.id = 'storeForm';
+
+  Object.entries(builderData.item_shop).forEach(([cat, items]) => {
+    const field = document.createElement('div');
+    field.className = 'form-field';
+    const label = document.createElement('label');
+    label.textContent = `Choose ${cat}`;
+    const select = document.createElement('select');
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'None';
+    select.appendChild(none);
+    items.forEach((it, i) => {
+      const o = document.createElement('option');
+      o.value = i;
+      const desc = it.damage ? ` ${it.damage}` : it.ac_bonus ? ` ${it.ac_bonus}` : '';
+      o.textContent = `${it.name}${desc} (${it.cost_skott})`;
+      select.appendChild(o);
+    });
+    field.appendChild(label);
+    field.appendChild(select);
+    form.appendChild(field);
+  });
+
+  const finishBtn = document.createElement('button');
+  finishBtn.className = 'menu-option';
+  finishBtn.textContent = 'Finish';
+  form.appendChild(finishBtn);
+  creator.appendChild(form);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    let idx = 0;
+    Object.entries(builderData.item_shop).forEach(([cat, items]) => {
+      const select = form.querySelectorAll('select')[idx++];
+      const choice = select.value;
+      if (choice) {
+        const item = items[parseInt(choice, 10)];
+        if (item) charData.inventory.push(item.name);
+      }
+    });
+
+    await fetch('/api/characters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data: charData })
+    });
+
+    currentCharacter = { name, ...charData };
+    append(`Character '${name}' created.`);
+    creator.style.display = 'none';
+    output.style.display = '';
+    menu.style.display = 'flex';
+    showMenu('character');
+  });
+}
+
 async function createPlayerFromForm(e) {
   e.preventDefault();
   const name = document.getElementById('char-name').value.trim();
@@ -114,18 +174,20 @@ async function createPlayerFromForm(e) {
 
   if (alignment) charData.alignment = alignment;
 
-  await fetch('/api/characters', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, data: charData })
+  const allTraits = new Set();
+  builderData.family_background.options.forEach(opt => {
+    (opt.subclass_traits || []).forEach(t => allTraits.add(t));
+  });
+  charData.traits = {};
+  allTraits.forEach(t => {
+    charData.traits[t] = 6;
+  });
+  fam.subclass_traits.forEach(t => {
+    charData.traits[t] = 5;
   });
 
   currentCharacter = { name, ...charData };
-  append(`Character '${name}' created.`);
-  creator.style.display = 'none';
-  output.style.display = '';
-  menu.style.display = 'flex';
-  showMenu('character');
+  showStore(name, charData);
 }
 
 const menus = {
@@ -169,12 +231,19 @@ function showSheet() {
     append('No character loaded.');
     return;
   }
+  output.innerHTML = '';
   append('--- Character Sheet ---');
   Object.entries(currentCharacter).forEach(([k, v]) => {
-    if (k === 'inventory') return;
+    if (k === 'inventory' || k === 'traits') return;
     const val = Array.isArray(v) ? v.join(', ') : v;
     append(`${k}: ${val}`);
   });
+  if (currentCharacter.traits) {
+    append('Traits:');
+    Object.entries(currentCharacter.traits).forEach(([t, val]) => {
+      append(`- ${t}: ${val}/6`);
+    });
+  }
 }
 
 function showInventory() {
@@ -182,19 +251,23 @@ function showInventory() {
     append('No character loaded.');
     return;
   }
+  output.innerHTML = '';
   const items = currentCharacter.inventory || [];
   append('Inventory: ' + (items.length ? items.join(', ') : 'Empty'));
 }
 
 function showJournal() {
+  output.innerHTML = '';
   append('Journal feature coming soon.');
 }
 
 function showMap() {
+  output.innerHTML = '';
   append('Map feature coming soon.');
 }
 
 function handleAction(action) {
+  output.innerHTML = '';
   switch (action) {
     case 'showPlayer':
       append('Player menu');
