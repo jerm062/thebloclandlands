@@ -3,9 +3,6 @@ const menu = document.getElementById('menu');
 const creator = document.getElementById('creator');
 const guideEdit = document.getElementById('guide-edit');
 const storyPanel = document.getElementById('story');
-const hexGenPanel = document.getElementById('hex-gen');
-const hexContent = document.getElementById('hex-content');
-const hexMenu = document.getElementById('hex-menu');
 
 let builderData = null;
 let currentCharacter = null;
@@ -40,18 +37,6 @@ function append(text) {
   output.appendChild(p);
   output.scrollTop = output.scrollHeight;
 }
-
-function getMarkerString(markers = {}) {
-  let str = '';
-  if (markers.current_location) str += '#';
-  if (markers.mission) str += 'X';
-  if (markers.revealed_info) str += '!';
-  if (markers.side_mission) str += '?';
-  if (markers.traversed) str += '+';
-  return str;
-}
-
-
 
 async function showCreatorForm() {
   output.style.display = 'none';
@@ -448,13 +433,14 @@ const menus = {
     { text: 'New Player', action: 'newPlayer' },
     { text: 'Load Game', action: 'loadPlayer' },
     { text: 'Story Dialogue', action: 'showStory' },
+    { text: 'Map', action: 'showMap' },
     { text: 'Back', action: 'showMain' }
   ],
   guide: [
     { text: 'Start Guide Session', action: 'startGuide' },
     { text: 'Manage Players', action: 'managePlayers' },
     { text: 'Caravan Party', action: 'showParty' },
-    { text: 'Hex Tools', action: 'showHexMenu' },
+    { text: 'Map', action: 'showMap' },
     { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
   ],
@@ -529,59 +515,8 @@ function showJournal() {
   append('Journal feature coming soon.');
 }
 
-function isAdjacent(a, b) {
-  const ai = parseInt(a, 10) - 1;
-  const bi = parseInt(b, 10) - 1;
-  const ax = ai % 5, ay = Math.floor(ai / 5);
-  const bx = bi % 5, by = Math.floor(bi / 5);
-  return Math.abs(ax - bx) + Math.abs(ay - by) === 1;
-}
-
 function showMap() {
-  storyPanel.style.display = 'none';
-  output.style.display = '';
-  output.innerHTML = '';
-  const current = localStorage.getItem('currentHex') || '001';
-  apiFetch('/api/hexes').then(r => r.json()).then(all => {
-    const grid = document.createElement('div');
-    grid.id = 'player-map';
-    grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
-    for (let i = 1; i <= 25; i++) {
-      const num = i.toString().padStart(3, '0');
-      const cell = document.createElement('button');
-      cell.className = 'menu-option';
-      cell.textContent = num === current ? 'X' : num;
-      cell.addEventListener('click', () => {
-        const info = all[num];
-        if (num === current) {
-          output.innerHTML = '';
-          append('Hex ' + num);
-          if (info) {
-            Object.entries(info).forEach(([k, v]) => append(k + ': ' + v));
-          } else {
-            append('No info.');
-          }
-        } else if (isAdjacent(current, num)) {
-          const roll = Math.floor(Math.random() * 6) + 1;
-          const nav = currentCharacter.traits?.Navigation || 0;
-          if (roll + nav >= 6 && info) {
-            append('Scouted hex ' + num + ':');
-            Object.entries(info).forEach(([k, v]) => append(k + ': ' + v));
-          } else {
-            append('Failed to scout ' + num + ' (roll ' + roll + ')');
-          }
-        }
-      });
-      grid.appendChild(cell);
-    }
-    output.appendChild(grid);
-    const back = document.createElement('button');
-    back.className = 'menu-option';
-    back.textContent = 'Back';
-    back.addEventListener('click', () => showMenu('character'));
-    output.appendChild(back);
-  });
+  window.open('hexmap.html', '_blank');
 }
 
 async function showParty() {
@@ -687,181 +622,6 @@ async function showParty() {
   }
 }
 
-function showHexMenu() {
-  output.style.display = 'none';
-  creator.style.display = 'none';
-  guideEdit.style.display = 'none';
-  storyPanel.style.display = 'none';
-  hexGenPanel.style.display = 'flex';
-  hexContent.innerHTML = '';
-  hexMenu.innerHTML = '';
-
-  const list = document.createElement('button');
-  list.className = 'menu-option';
-  list.textContent = 'Hex List';
-  list.addEventListener('click', showHexList);
-  hexMenu.appendChild(list);
-
-  const map = document.createElement('button');
-  map.className = 'menu-option';
-  map.textContent = 'Hex Map';
-  map.addEventListener('click', showHexMap);
-  hexMenu.appendChild(map);
-
-  const back = document.createElement('button');
-  back.className = 'menu-option';
-  back.textContent = 'Back';
-  back.addEventListener('click', () => {
-    hexGenPanel.style.display = 'none';
-    showMenu('guide');
-  });
-  hexMenu.appendChild(back);
-}
-
-async function showHexList() {
-  const hx = await apiFetch('/api/hexes').then(r => r.json());
-  hexContent.innerHTML = '';
-  for (let i = 1; i <= 25; i++) {
-    const num = i.toString().padStart(3, '0');
-    const btn = document.createElement('button');
-    btn.className = 'menu-option';
-    const mark = getMarkerString(hx[num]?.markers);
-    btn.textContent = mark ? `${num} ${mark}` : num;
-    btn.addEventListener('click', () => editHex(num));
-    hexContent.appendChild(btn);
-  }
-  const back = document.createElement('button');
-  back.className = 'menu-option';
-  back.textContent = 'Back';
-  back.addEventListener('click', showHexMenu);
-  hexContent.appendChild(back);
-}
-
-async function editHex(num) {
-  const all = await apiFetch('/api/hexes').then(r => r.json());
-  let hx = all[num];
-  if (!hx) {
-    hx = await apiFetch('/api/hex/generate?hex=' + num).then(r => r.json());
-  }
-  hx.notes = hx.notes || '';
-  hx.markers = hx.markers || {};
-  hexContent.innerHTML = '';
-
-  const form = document.createElement('form');
-
-  const info = document.createElement('div');
-  info.className = 'form-field';
-  function renderInfo() {
-    info.innerHTML = `
-      <p>Biome: ${hx.biome}</p>
-      <p>Terrain: ${hx.terrain}</p>
-      <p>Quality: ${hx.quality}</p>
-      <p>Flora: ${hx.flora}</p>
-      <p>Fauna: ${hx.fauna}</p>
-      <p>Fish: ${hx.fish}</p>
-      <p>Animal Feature: ${hx.animalFeature}</p>
-      <p>Flora Feature: ${hx.floraFeature}</p>
-    `;
-  }
-  renderInfo();
-  form.appendChild(info);
-
-  const genBtn = document.createElement('button');
-  genBtn.className = 'menu-option';
-  genBtn.type = 'button';
-  genBtn.textContent = 'Generate';
-  genBtn.addEventListener('click', async () => {
-    hx = await apiFetch('/api/hex/generate?hex=' + num).then(r => r.json());
-    renderInfo();
-  });
-  form.appendChild(genBtn);
-
-  const noteField = document.createElement('div');
-  noteField.className = 'form-field';
-  noteField.innerHTML = `<label>Notes</label><input name="notes" value="${hx.notes}" />`;
-  form.appendChild(noteField);
-
-  const marks = [
-    ['current_location', '#'],
-    ['mission', 'X'],
-    ['revealed_info', '!'],
-    ['side_mission', '?'],
-    ['traversed', '+']
-  ];
-  marks.forEach(([m, sym]) => {
-    const d = document.createElement('div');
-    d.className = 'form-field';
-    const checked = hx.markers[m] ? 'checked' : '';
-    d.innerHTML = `<label><input type="checkbox" name="mark-${m}" ${checked}/> ${sym}</label>`;
-    form.appendChild(d);
-  });
-
-  const submit = document.createElement('button');
-  submit.className = 'menu-option';
-  submit.textContent = 'Save';
-  form.appendChild(submit);
-
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const data = {
-      hex_number: num,
-      biome: hx.biome,
-      terrain: hx.terrain,
-      quality: hx.quality,
-      flora: hx.flora,
-      fauna: hx.fauna,
-      fish: hx.fish,
-      animalFeature: hx.animalFeature,
-      floraFeature: hx.floraFeature,
-      notes: form.querySelector('[name="notes"]').value,
-      markers: {}
-    };
-    marks.forEach(([m]) => {
-      data.markers[m] = form.querySelector(`[name="mark-${m}"]`).checked;
-    });
-    await apiFetch('/api/hex/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    showHexList();
-  });
-
-  hexContent.appendChild(form);
-  const back = document.createElement('button');
-  back.className = 'menu-option';
-  back.textContent = 'Back';
-  back.addEventListener('click', showHexList);
-  hexContent.appendChild(back);
-}
-
-async function showHexMap() {
-  const hx = await apiFetch('/api/hexes').then(r => r.json());
-  hexContent.innerHTML = '';
-  const grid = document.createElement('div');
-  grid.id = 'hex-grid';
-  for (let r = 0; r < 5; r++) {
-    const row = document.createElement('div');
-    row.className = 'hex-row';
-    if (r % 2 === 1) row.classList.add('offset');
-    for (let c = 0; c < 5; c++) {
-      const num = (r * 5 + c + 1).toString().padStart(3, '0');
-      const cell = document.createElement('div');
-      cell.className = 'hex-cell';
-      const mark = getMarkerString(hx[num]?.markers);
-      cell.textContent = mark || num;
-      cell.addEventListener('click', () => editHex(num));
-      row.appendChild(cell);
-    }
-    grid.appendChild(row);
-  }
-  hexContent.appendChild(grid);
-  const back = document.createElement('button');
-  back.className = 'menu-option';
-  back.textContent = 'Back';
-  back.addEventListener('click', showHexMenu);
-  hexContent.appendChild(back);
-}
 
 
 async function showOffers() {
@@ -996,9 +756,6 @@ function handleAction(action) {
       break;
     case 'showMap':
       showMap();
-      break;
-    case 'showHexMenu':
-      showHexMenu();
       break;
     case 'showOffers':
       showOffers();

@@ -10,7 +10,6 @@ const dataDir = process.env.DATA_DIR
   : path.join(__dirname, 'data');
 const partyPath = path.join(dataDir, 'party.json');
 const offersPath = path.join(dataDir, 'offers.json');
-const hexGenPath = path.join(dataDir, 'hex_generator.yaml');
 const hexesPath = path.join(dataDir, 'hexes.yaml');
 
 function loadParty() {
@@ -39,17 +38,6 @@ function saveOffers(o) {
   fs.writeFileSync(offersPath, JSON.stringify(o, null, 2), 'utf8');
 }
 
-function loadHexGen() {
-  try {
-    return yaml.load(fs.readFileSync(hexGenPath, 'utf8'));
-  } catch {
-    return { hex_generator: { next_hex_number: '001' } };
-  }
-}
-
-function saveHexGen(data) {
-  fs.writeFileSync(hexGenPath, yaml.dump(data), 'utf8');
-}
 
 function loadHexes() {
   try {
@@ -119,60 +107,23 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && req.url === '/api/hex-generator') {
-    const data = loadHexGen();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(data));
-    return;
-  }
 
-  if (req.method === 'GET' && req.url.startsWith('/api/hex/generate')) {
-    const urlObj = new URL(req.url, `http://${req.headers.host}`);
-    const specified = urlObj.searchParams.get('hex');
-    const gen = loadHexGen();
-    const next = parseInt(gen.hex_generator.next_hex_number, 10);
-    const hexNum = (specified || next.toString().padStart(3, '0'));
-    function roll(table) {
-      const sides = Object.keys(table).length;
-      const r = Math.floor(Math.random() * sides) + 1;
-      return table[r] || table[String(r)];
-    }
-    const biome = roll(gen.hex_generator.create_hex.biome_table);
-    const terrain = roll(gen.hex_generator.create_hex.terrain_features.d20);
-    const quality = roll(gen.hex_generator.create_hex.region_qualities.d20);
-    const flora = roll(gen.hex_generator.random_tables.flora.d6);
-    const fauna = roll(gen.hex_generator.random_tables.fauna.d6);
-    const fish = roll(gen.hex_generator.random_tables.fish.d6);
-    const animalFeature = roll(gen.hex_generator.animal_feature_table.d100);
-    const floraFeature = roll(gen.hex_generator.flora_feature_table.d20);
-    const markers = { current_location: false, mission: false, revealed_info: false, side_mission: false, traversed: false };
-    const hex = { hex_number: hexNum, biome, terrain, quality, flora, fauna, fish, animalFeature, floraFeature, markers };
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(hex));
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/hex/save') {
+  if (req.method === 'POST' && req.url === '/api/hex/note') {
     let body = '';
     req.on('data', c => (body += c));
     req.on('end', () => {
       try {
-        const hex = JSON.parse(body);
-        const gen = loadHexGen();
-        const next = parseInt(gen.hex_generator.next_hex_number, 10);
-        const key = hex.hex_number || hex.hex;
-        if (key === gen.hex_generator.next_hex_number) {
-          gen.hex_generator.next_hex_number = (next + 1).toString().padStart(3, '0');
-          saveHexGen(gen);
-        }
+        const { hex, note } = JSON.parse(body);
         const all = loadHexes();
-        all[key] = hex;
+        const hx = all[hex] || {};
+        hx.note = note;
+        all[hex] = hx;
         saveHexes(all);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Failed to save hex');
+        res.end('Failed to save note');
       }
     });
     return;
