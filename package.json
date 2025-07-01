@@ -2,7 +2,8 @@
   "name": "thebloclandlands",
   "scripts": {
     "player": "node terminals/player.js",
-    "guide": "node terminals/guide.js"
+    "guide": "node terminals/guide.js",
+    "start": "node terminals/player.js"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
