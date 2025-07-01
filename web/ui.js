@@ -1,6 +1,7 @@
 const output = document.getElementById('output');
 const menu = document.getElementById('menu');
 const creator = document.getElementById('creator');
+const guideEdit = document.getElementById('guide-edit');
 
 let builderData = null;
 let currentCharacter = null;
@@ -16,6 +17,7 @@ async function showCreatorForm() {
   output.style.display = 'none';
   menu.style.display = 'none';
   creator.style.display = 'block';
+  guideEdit.style.display = 'none';
   creator.innerHTML = '';
 
   builderData = await fetch('/api/builder').then(r => r.json());
@@ -168,6 +170,7 @@ async function createPlayerFromForm(e) {
     family_background: fam.name,
     subclass_traits: fam.subclass_traits,
     hp: 6,
+    sp: 0,
     level: 1,
     inventory: []
   };
@@ -190,6 +193,122 @@ async function createPlayerFromForm(e) {
   showStore(name, charData);
 }
 
+async function loadPlayer() {
+  const name = prompt('Enter character name');
+  if (!name) return;
+  const res = await fetch('/api/characters?name=' + encodeURIComponent(name));
+  if (!res.ok) {
+    append('Character not found.');
+    return;
+  }
+  const data = await res.json();
+  currentCharacter = { name, ...data };
+  append(`Loaded ${name}.`);
+  showMenu('character');
+}
+
+async function showPlayerManager() {
+  output.style.display = 'none';
+  menu.style.display = 'none';
+  guideEdit.style.display = 'block';
+  guideEdit.innerHTML = '';
+
+  const chars = await fetch('/api/characters').then(r => r.json());
+  Object.entries(chars).forEach(([name, data]) => {
+    const row = document.createElement('div');
+    row.className = 'form-field';
+    const label = document.createElement('span');
+    label.textContent = name + ' ';
+    const editBtn = document.createElement('button');
+    editBtn.className = 'menu-option';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => editPlayer(name, data));
+    const delBtn = document.createElement('button');
+    delBtn.className = 'menu-option';
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', async () => {
+      if (!confirm('Delete ' + name + '?')) return;
+      await fetch('/api/characters?name=' + encodeURIComponent(name), { method: 'DELETE' });
+      showPlayerManager();
+    });
+    row.appendChild(label);
+    row.appendChild(editBtn);
+    row.appendChild(delBtn);
+    guideEdit.appendChild(row);
+  });
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', () => {
+    guideEdit.style.display = 'none';
+    output.style.display = '';
+    menu.style.display = 'flex';
+    showMenu('guide');
+  });
+  guideEdit.appendChild(back);
+}
+
+function editPlayer(name, data) {
+  guideEdit.innerHTML = '';
+  const form = document.createElement('form');
+  const hpField = document.createElement('div');
+  hpField.className = 'form-field';
+  hpField.innerHTML = `<label>HP</label><input id="hp" type="number" value="${data.hp || 0}" />`;
+  const spField = document.createElement('div');
+  spField.className = 'form-field';
+  spField.innerHTML = `<label>SP</label><input id="sp" type="number" value="${data.sp || 0}" />`;
+  const invField = document.createElement('div');
+  invField.className = 'form-field';
+  invField.innerHTML = `<label>Inventory</label><input id="inv" type="text" value="${(data.inventory || []).join(', ')}" />`;
+  form.appendChild(hpField);
+  form.appendChild(spField);
+  form.appendChild(invField);
+
+  if (data.traits) {
+    Object.entries(data.traits).forEach(([t, val]) => {
+      const tf = document.createElement('div');
+      tf.className = 'form-field';
+      tf.innerHTML = `<label>${t}</label><input name="trait-${t}" type="number" value="${val}" />`;
+      form.appendChild(tf);
+    });
+  }
+
+  const save = document.createElement('button');
+  save.className = 'menu-option';
+  save.textContent = 'Save';
+  form.appendChild(save);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const updates = {
+      hp: parseInt(form.querySelector('#hp').value, 10),
+      sp: parseInt(form.querySelector('#sp').value, 10),
+      inventory: form.querySelector('#inv').value.split(',').map(s => s.trim()).filter(Boolean)
+    };
+    if (data.traits) {
+      updates.traits = {};
+      Object.keys(data.traits).forEach(t => {
+        updates.traits[t] = parseInt(form.querySelector(`[name=trait-${t}]`).value, 10);
+      });
+    }
+    await fetch('/api/characters?name=' + encodeURIComponent(name), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    showPlayerManager();
+  });
+
+  const cancel = document.createElement('button');
+  cancel.className = 'menu-option';
+  cancel.textContent = 'Cancel';
+  cancel.type = 'button';
+  cancel.addEventListener('click', showPlayerManager);
+  form.appendChild(cancel);
+
+  guideEdit.appendChild(form);
+}
+
 const menus = {
   main: [
     { text: 'Player', action: 'showPlayer' },
@@ -203,6 +322,7 @@ const menus = {
   ],
   guide: [
     { text: 'Start Guide Session', action: 'startGuide' },
+    { text: 'Manage Players', action: 'managePlayers' },
     { text: 'Back', action: 'showMain' }
   ],
   character: [
@@ -290,10 +410,13 @@ function handleAction(action) {
       showCreatorForm();
       break;
     case 'loadPlayer':
-      append('Loading saved game...');
+      loadPlayer();
       break;
     case 'startGuide':
       append('Starting guide session...');
+      break;
+    case 'managePlayers':
+      showPlayerManager();
       break;
     case 'showSheet':
       showSheet();
