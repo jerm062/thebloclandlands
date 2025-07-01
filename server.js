@@ -126,10 +126,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && req.url === '/api/hex/generate') {
+  if (req.method === 'GET' && req.url.startsWith('/api/hex/generate')) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const specified = urlObj.searchParams.get('hex');
     const gen = loadHexGen();
     const next = parseInt(gen.hex_generator.next_hex_number, 10);
-    const hexNum = next.toString().padStart(3, '0');
+    const hexNum = (specified || next.toString().padStart(3, '0'));
     function roll(table) {
       const sides = Object.keys(table).length;
       const r = Math.floor(Math.random() * sides) + 1;
@@ -137,13 +139,14 @@ const server = http.createServer((req, res) => {
     }
     const biome = roll(gen.hex_generator.create_hex.biome_table);
     const terrain = roll(gen.hex_generator.create_hex.terrain_features.d20);
-    const region = roll(gen.hex_generator.create_hex.region_qualities.d20);
+    const quality = roll(gen.hex_generator.create_hex.region_qualities.d20);
     const flora = roll(gen.hex_generator.random_tables.flora.d6);
     const fauna = roll(gen.hex_generator.random_tables.fauna.d6);
     const fish = roll(gen.hex_generator.random_tables.fish.d6);
     const animalFeature = roll(gen.hex_generator.animal_feature_table.d100);
     const floraFeature = roll(gen.hex_generator.flora_feature_table.d20);
-    const hex = { hex: hexNum, biome, terrain, region, flora, fauna, fish, animalFeature, floraFeature };
+    const markers = { current_location: false, mission: false, revealed_info: false, side_mission: false, traversed: false };
+    const hex = { hex_number: hexNum, biome, terrain, quality, flora, fauna, fish, animalFeature, floraFeature, markers };
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(hex));
     return;
@@ -157,12 +160,13 @@ const server = http.createServer((req, res) => {
         const hex = JSON.parse(body);
         const gen = loadHexGen();
         const next = parseInt(gen.hex_generator.next_hex_number, 10);
-        if (hex.hex === gen.hex_generator.next_hex_number) {
+        const key = hex.hex_number || hex.hex;
+        if (key === gen.hex_generator.next_hex_number) {
           gen.hex_generator.next_hex_number = (next + 1).toString().padStart(3, '0');
           saveHexGen(gen);
         }
         const all = loadHexes();
-        all[hex.hex] = hex;
+        all[key] = hex;
         saveHexes(all);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
