@@ -89,19 +89,29 @@ character_builder:
           damage: 1d4
           cost_skott: 2
 
-      armor:
-        - name: Quilted Armor
-          ac_bonus: '+1'
-          cost_skott: 10
-        - name: Cloth Armor
-          ac_bonus: '+0'
-          cost_skott: 5
-        - name: Scale Armor
-          ac_bonus: '+3'
-          cost_skott: 45
-        - name: Ink Armor
-          ac_bonus: '+2'
-          cost_skott: 30
+      armor_options:
+        materials:
+          - name: Quilted Cotton
+            ac_bonus: '+1'
+            cost_skott: 10
+          - name: Deerskin Leather
+            ac_bonus: '+2'
+            cost_skott: 20
+          - name: Reinforced Canvas
+            ac_bonus: '+2'
+            cost_skott: 25
+          - name: Animal Scales
+            ac_bonus: '+2'
+            cost_skott: 35
+          - name: Tattoos
+            ac_bonus: '+0'
+            special: Grants advantage on intimidation checks
+        styles:
+          - name: Fringed Jacket
+          - name: Long Coat
+          - name: War Shirt
+          - name: Doublet
+          - name: Duster
 
       helmet:
         - name: Hood
