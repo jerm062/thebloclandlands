@@ -39,7 +39,7 @@ character before starting the player terminal.
 
 A basic web interface is provided in the `web` directory. Open `web/index.html`
 in a browser to try a simple menu styled in the spirit of classic text RPGs.
-The UI uses the [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans)
+The UI uses the [Jacquard 24](https://fonts.google.com/specimen/Jacquard+24)
 font from Google Fonts.
 
 ## Running the Web Server
