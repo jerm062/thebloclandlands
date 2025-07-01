@@ -1,0 +1,65 @@
+character_builder:
+    religious_belief:
+      description: >
+        Choose a religious orientation; affects worldview, languages, and sin mechanics.
+      options:
+        - name: None
+          languages: [Common]
+          description: Guided by instinct or reason.
+        - name: Monotheistic
+          languages: [Common, Scripture]
+          description: Follows one god; gains XP for conversions.
+          alignment:
+            options:
+              - Benevolent
+              - Vengeful
+        - name: Polytheistic
+          languages: [Common, Old Tongue]
+          description: Honors many spirits; gains XP for major offerings.
+          alignment:
+            options:
+              - Benevolent
+              - Vengeful
+    family_background:
+      description: Choose your background; grants subclass traits.
+      options:
+        - name: Spiritual Leader
+          subclass_traits: [Lore, Negotiation, Observation]
+        - name: Healer
+          subclass_traits: [Healing, Herbcraft, Animal Care]
+        - name: Hunter
+          subclass_traits: [Hunting, Foraging, Fishing]
+        - name: Raider
+          subclass_traits: [Intimidation, Tactics, Scavenging]
+        - name: Crafter
+          subclass_traits: [Repair, Crafting, Appraisal]
+        - name: Navigator
+          subclass_traits: [Navigation, Cartography, Weather Sense]
+    advancement_rules:
+      base_mechanic: Traits start succeeding on d6 rolls of 5-6.
+      advancement_progression:
+        - First advancement: 4-6
+        - Second advancement: 3-6
+        - Third advancement: 2-6
+      advancement_methods:
+        - XP-based leveling.
+        - Milestone rewards.
+      limits: Max 3 advances per trait.
+    xp_system:
+      exploration: 5-15 XP per new hex or unique feature.
+      monsters: 1 XP per creature HD.
+      treasure: 1 XP per Skott of loot.
+      level_thresholds:
+        2: 100
+        3: 300
+        4: 600
+        5: 1000
+        6: 1500
+        7: 2100
+        8: 2800
+        9: 3600
+        10: 4500
+        11: 5500
+        12: 6600
+        13: 7800
+        14: 9100

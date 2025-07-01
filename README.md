@@ -19,3 +19,10 @@ node terminals/guide.js
 Each line you enter is appended to `session.log` inside the respective data folder. Type `exit` to close the terminal.
 
 Set the `DATA_DIR` environment variable to change where data is stored (defaults to `./data`).
+
+## Character Builder
+
+Player characters are stored in `data/characters.yaml`. When `player.js` runs,
+enter a character name. If the name is not found, the character builder will
+prompt for choices defined in `data/character_builder.yaml` and save the new
+character before starting the player terminal.
