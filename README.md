@@ -38,6 +38,19 @@ character before starting the player terminal.
 ## Web UI
 
 A basic web interface is provided in the `web` directory. Open `web/index.html`
- in a browser to try a simple menu styled in the spirit of classic text RPGs.
+in a browser to try a simple menu styled in the spirit of classic text RPGs.
 The UI uses the [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans)
 font from Google Fonts.
+
+## Running the Web Server
+
+You can launch a simple HTTP server that serves the `web` directory. Start it
+with:
+
+```bash
+node server.js
+```
+
+The server listens on the port defined by the `PORT` environment variable (or
+`3000` by default) and provides a landing page with links to the player and
+guide options.
