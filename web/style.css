@@ -28,7 +28,11 @@ body {
 }
 
 #creator {
-  flex: 1 1 100%;
+  flex: 2 1 70%;
+}
+
+#guide-edit {
+  flex: 2 1 70%;
 }
 
 .panel {
@@ -45,6 +49,17 @@ body {
 
 #story {
   flex: 2 1 70%;
+}
+
+#rule-content {
+  flex: 2 1 70%;
+}
+
+#rule-menu {
+  flex: 1 1 30%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 #menu {
