@@ -68,6 +68,10 @@ body {
   gap: 0.5rem;
 }
 
+#hex-legend {
+  flex: 1 1 30%;
+}
+
 #player-map button {
   width: 100%;
 }

@@ -6,6 +6,7 @@ const storyPanel = document.getElementById('story');
 const hexGenPanel = document.getElementById('hex-gen');
 const hexContent = document.getElementById('hex-content');
 const hexMenu = document.getElementById('hex-menu');
+const hexLegend = document.getElementById('hex-legend');
 
 let builderData = null;
 let currentCharacter = null;
@@ -31,6 +32,32 @@ function append(text) {
   p.textContent = text;
   output.appendChild(p);
   output.scrollTop = output.scrollHeight;
+}
+
+function hideHexLegend() {
+  hexLegend.style.display = 'none';
+  hexLegend.innerHTML = '';
+}
+
+function getMarkerString(markers = {}) {
+  let str = '';
+  if (markers.current_location) str += '#';
+  if (markers.mission) str += 'X';
+  if (markers.revealed_info) str += '!';
+  if (markers.side_mission) str += '?';
+  if (markers.traversed) str += '+';
+  return str;
+}
+
+function updateHexLegend() {
+  hexLegend.innerHTML = `
+    <p># : Current Location</p>
+    <p>X : Mission Location</p>
+    <p>! : Known/Revealed Info</p>
+    <p>? : Side Mission</p>
+    <p>+ : Hex Traversed</p>
+  `;
+  hexLegend.style.display = 'block';
 }
 
 async function showCreatorForm() {
@@ -651,6 +678,7 @@ function showHexMenu() {
   hexGenPanel.style.display = 'flex';
   hexContent.innerHTML = '';
   hexMenu.innerHTML = '';
+  updateHexLegend();
 
   const gen = document.createElement('button');
   gen.className = 'menu-option';
@@ -675,6 +703,7 @@ function showHexMenu() {
   back.textContent = 'Back';
   back.addEventListener('click', () => {
     hexGenPanel.style.display = 'none';
+    hideHexLegend();
     showMenu('guide');
   });
   hexMenu.appendChild(back);
@@ -683,13 +712,16 @@ function showHexMenu() {
 async function showHexList() {
   const hx = await fetch('/api/hexes').then(r => r.json());
   hexContent.innerHTML = '';
-  Object.keys(hx).sort().forEach(num => {
+  updateHexLegend();
+  for (let i = 1; i <= 25; i++) {
+    const num = i.toString().padStart(3, '0');
     const btn = document.createElement('button');
     btn.className = 'menu-option';
-    btn.textContent = num;
+    const mark = getMarkerString(hx[num]?.markers);
+    btn.textContent = mark ? `${num} ${mark}` : num;
     btn.addEventListener('click', () => editHex(num));
     hexContent.appendChild(btn);
-  });
+  }
   const back = document.createElement('button');
   back.className = 'menu-option';
   back.textContent = 'Back';
@@ -702,14 +734,33 @@ function editHex(num) {
     .then(r => r.json())
     .then(all => {
       const hx = all[num];
-      if (!hx) return;
       hexContent.innerHTML = '';
+      updateHexLegend();
+      if (!hx) {
+        showHexGenerator(num);
+        return;
+      }
       const form = document.createElement('form');
-      Object.entries(hx).forEach(([k, v]) => {
+      const fields = ['biome', 'terrain', 'quality', 'flora', 'fauna', 'fish'];
+      fields.forEach(k => {
         const f = document.createElement('div');
         f.className = 'form-field';
-        f.innerHTML = `<label>${k}</label><input name="${k}" value="${v}" />`;
+        f.innerHTML = `<label>${k}</label><input name="${k}" value="${hx[k] || ''}" />`;
         form.appendChild(f);
+      });
+      const marks = [
+        ['current_location', '#'],
+        ['mission', 'X'],
+        ['revealed_info', '!'],
+        ['side_mission', '?'],
+        ['traversed', '+']
+      ];
+      marks.forEach(([m, sym]) => {
+        const d = document.createElement('div');
+        d.className = 'form-field';
+        const checked = hx.markers && hx.markers[m] ? 'checked' : '';
+        d.innerHTML = `<label><input type="checkbox" name="mark-${m}" ${checked}/> ${sym}</label>`;
+        form.appendChild(d);
       });
       const submit = document.createElement('button');
       submit.className = 'menu-option';
@@ -717,8 +768,13 @@ function editHex(num) {
       form.appendChild(submit);
       form.addEventListener('submit', async e => {
         e.preventDefault();
-        const data = {};
-        new FormData(form).forEach((v, k) => (data[k] = v));
+        const data = { hex_number: num, markers: {} };
+        fields.forEach(k => {
+          data[k] = form.querySelector(`[name="${k}"]`).value;
+        });
+        marks.forEach(([m]) => {
+          data.markers[m] = form.querySelector(`[name="mark-${m}"]`).checked;
+        });
         await fetch('/api/hex/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -735,8 +791,10 @@ function editHex(num) {
     });
 }
 
-function showHexMap() {
+async function showHexMap() {
+  const hx = await fetch('/api/hexes').then(r => r.json());
   hexContent.innerHTML = '';
+  updateHexLegend();
   const grid = document.createElement('div');
   grid.id = 'hex-grid';
   for (let r = 0; r < 5; r++) {
@@ -747,7 +805,8 @@ function showHexMap() {
       const num = (r * 5 + c + 1).toString().padStart(3, '0');
       const cell = document.createElement('div');
       cell.className = 'hex-cell';
-      cell.textContent = num;
+      const mark = getMarkerString(hx[num]?.markers);
+      cell.textContent = mark || num;
       cell.addEventListener('click', () => editHex(num));
       row.appendChild(cell);
     }
@@ -761,7 +820,7 @@ function showHexMap() {
   hexContent.appendChild(back);
 }
 
-async function showHexGenerator() {
+async function showHexGenerator(num) {
   output.style.display = 'none';
   creator.style.display = 'none';
   guideEdit.style.display = 'none';
@@ -769,6 +828,7 @@ async function showHexGenerator() {
   hexGenPanel.style.display = 'flex';
   hexContent.innerHTML = '';
   hexMenu.innerHTML = '';
+  updateHexLegend();
 
   const genBtn = document.createElement('button');
   genBtn.className = 'menu-option';
@@ -780,7 +840,8 @@ async function showHexGenerator() {
   hexContent.appendChild(form);
 
   genBtn.addEventListener('click', async () => {
-    const hx = await fetch('/api/hex/generate').then(r => r.json());
+    const url = num ? `/api/hex/generate?hex=${num}` : '/api/hex/generate';
+    const hx = await fetch(url).then(r => r.json());
     form.innerHTML = '';
     form.style.display = 'block';
     Object.entries(hx).forEach(([k, v]) => {
@@ -797,14 +858,14 @@ async function showHexGenerator() {
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
-    const data = {};
+    const data = { hex_number: num };
     new FormData(form).forEach((v, k) => (data[k] = v));
     await fetch('/api/hex/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    hexContent.innerHTML = 'Saved.';
+    showHexList();
   });
 
   const back = document.createElement('button');
@@ -812,6 +873,7 @@ async function showHexGenerator() {
   back.textContent = 'Back';
   back.addEventListener('click', () => {
     hexGenPanel.style.display = 'none';
+    hideHexLegend();
     showMenu('guide');
   });
   hexMenu.appendChild(back);
