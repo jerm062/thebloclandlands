@@ -37,6 +37,7 @@
     <a href="#creating-a-character">Creating a Character</a>
     <a href="#gameplay">Gameplay</a>
     <a href="#combat">Combat</a>
+    <a href="#equipment">Equipment &amp; Encumbrance</a>
   </nav>
   <section id="introduction">
     <h2>Introduction</h2>
@@ -54,5 +55,36 @@
     <h2>Combat</h2>
     <p>Combat is turn based. Roll a die and compare results to determine success.</p>
   </section>
+  <section id="equipment">
+    <h2>Equipment &amp; Encumbrance</h2>
+    <p>Starting characters receive:</p>
+    <ul>
+      <li>Rations x3</li>
+      <li>Bedroll (Average)</li>
+      <li>Tent (Average)</li>
+      <li>Pouch (+2 slots)</li>
+      <li>Backpack (+4 slots)</li>
+      <li>Lantern (Average)</li>
+      <li>Flint Box</li>
+    </ul>
+    <p>Everyone has 12 inventory slots. A backpack adds 4 and a pouch adds 2. Carrying more items than your slots causes disadvantage on physical tasks.</p>
+    <p>Items with durability begin at Average. Harsh use can drop them to Poor. Characters with the Repair trait may roll a d6&mdash;on 5-6 the item improves one step.</p>
+  </section>
+  <script>
+    const sections = document.querySelectorAll('section');
+    function show(id) {
+      sections.forEach(s => s.style.display = 'none');
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    }
+    document.querySelectorAll('nav a').forEach(a => {
+      const id = a.getAttribute('href').slice(1);
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        show(id);
+      });
+    });
+    show('introduction');
+  </script>
 </body>
 </html>
