@@ -48,6 +48,10 @@ in a browser to try a simple menu styled in the spirit of classic text RPGs.
 The UI uses the [Jacquard 24](https://fonts.google.com/specimen/Jacquard+24)
 font from Google Fonts.
 
+**Note:** Features like creating new characters or editing hexes require the
+API endpoints served by `server.js`. Make sure the server is running before
+using these options.
+
 ## Running the Web Server
 
 You can launch a simple HTTP server that serves the `web` directory. Start it
