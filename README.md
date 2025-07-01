@@ -2,6 +2,14 @@
 
 This repository provides simple terminal interfaces with persistent storage.
 
+## Install Dependencies
+
+The project uses Yarn as the package manager. Install modules with:
+
+```bash
+yarn install --immutable
+```
+
 ## Getting Started
 
 The terminals store session logs in the `data` directory by default. To run a terminal:
