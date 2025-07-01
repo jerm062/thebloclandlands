@@ -178,6 +178,27 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && req.url === '/api/hex/note') {
+    let body = '';
+    req.on('data', c => (body += c));
+    req.on('end', () => {
+      try {
+        const { hex, note } = JSON.parse(body);
+        const all = loadHexes();
+        const hx = all[hex] || {};
+        hx.note = note;
+        all[hex] = hx;
+        saveHexes(all);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to save note');
+      }
+    });
+    return;
+  }
+
   if (req.method === 'GET' && req.url === '/api/hexes') {
     const hx = loadHexes();
     res.writeHead(200, { 'Content-Type': 'application/json' });
