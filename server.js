@@ -5,7 +5,9 @@ const yaml = require('js-yaml');
 
 const port = process.env.PORT || 3000;
 const baseDir = path.join(__dirname, 'web');
-const dataDir = path.join(__dirname, 'data');
+const dataDir = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(__dirname, 'data');
 const partyPath = path.join(dataDir, 'party.json');
 const offersPath = path.join(dataDir, 'offers.json');
 const hexGenPath = path.join(dataDir, 'hex_generator.yaml');

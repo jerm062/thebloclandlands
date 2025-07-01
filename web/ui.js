@@ -409,14 +409,13 @@ const menus = {
     { text: 'Start Guide Session', action: 'startGuide' },
     { text: 'Manage Players', action: 'managePlayers' },
     { text: 'Caravan Party', action: 'showParty' },
-    { text: 'Hex Generator', action: 'showHexGen' },
+    { text: 'Hex Tools', action: 'showHexMenu' },
     { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
   ],
   character: [
     { text: 'Character Sheet', action: 'showSheet' },
     { text: 'Inventory', action: 'showInventory' },
-    { text: 'Check Offers', action: 'showOffers' },
     { text: 'Journal', action: 'showJournal' },
     { text: 'Map', action: 'showMap' },
     { text: 'Caravan Party', action: 'showParty' },
@@ -484,11 +483,59 @@ function showJournal() {
   append('Journal feature coming soon.');
 }
 
+function isAdjacent(a, b) {
+  const ai = parseInt(a, 10) - 1;
+  const bi = parseInt(b, 10) - 1;
+  const ax = ai % 5, ay = Math.floor(ai / 5);
+  const bx = bi % 5, by = Math.floor(bi / 5);
+  return Math.abs(ax - bx) + Math.abs(ay - by) === 1;
+}
+
 function showMap() {
   storyPanel.style.display = 'none';
   output.style.display = '';
   output.innerHTML = '';
-  append('Map feature coming soon.');
+  const current = localStorage.getItem('currentHex') || '001';
+  fetch('/api/hexes').then(r => r.json()).then(all => {
+    const grid = document.createElement('div');
+    grid.id = 'player-map';
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+    for (let i = 1; i <= 25; i++) {
+      const num = i.toString().padStart(3, '0');
+      const cell = document.createElement('button');
+      cell.className = 'menu-option';
+      cell.textContent = num === current ? 'X' : num;
+      cell.addEventListener('click', () => {
+        const info = all[num];
+        if (num === current) {
+          output.innerHTML = '';
+          append('Hex ' + num);
+          if (info) {
+            Object.entries(info).forEach(([k, v]) => append(k + ': ' + v));
+          } else {
+            append('No info.');
+          }
+        } else if (isAdjacent(current, num)) {
+          const roll = Math.floor(Math.random() * 6) + 1;
+          const nav = currentCharacter.traits?.Navigation || 0;
+          if (roll + nav >= 6 && info) {
+            append('Scouted hex ' + num + ':');
+            Object.entries(info).forEach(([k, v]) => append(k + ': ' + v));
+          } else {
+            append('Failed to scout ' + num + ' (roll ' + roll + ')');
+          }
+        }
+      });
+      grid.appendChild(cell);
+    }
+    output.appendChild(grid);
+    const back = document.createElement('button');
+    back.className = 'menu-option';
+    back.textContent = 'Back';
+    back.addEventListener('click', () => showMenu('character'));
+    output.appendChild(back);
+  });
 }
 
 async function showParty() {
@@ -545,11 +592,22 @@ async function showParty() {
         btn.className = 'menu-option';
         btn.textContent = action.charAt(0).toUpperCase() + action.slice(1);
         btn.addEventListener('click', async () => {
+          let desc = '';
+          if (action === 'travel') {
+            desc = prompt('Describe your travel action') || '';
+          }
           await fetch('/api/party/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, action })
           });
+          if (desc) {
+            await fetch('/api/story', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ role: name, text: desc })
+            });
+          }
           showParty();
         });
         output.appendChild(btn);
@@ -581,6 +639,119 @@ async function showParty() {
     back.addEventListener('click', () => showMenu('guide'));
     output.appendChild(back);
   }
+}
+
+function showHexMenu() {
+  output.style.display = 'none';
+  creator.style.display = 'none';
+  guideEdit.style.display = 'none';
+  storyPanel.style.display = 'none';
+  hexGenPanel.style.display = 'block';
+  hexGenPanel.innerHTML = '';
+
+  const gen = document.createElement('button');
+  gen.className = 'menu-option';
+  gen.textContent = 'Generate Hex';
+  gen.addEventListener('click', showHexGenerator);
+  hexGenPanel.appendChild(gen);
+
+  const list = document.createElement('button');
+  list.className = 'menu-option';
+  list.textContent = 'Hex List';
+  list.addEventListener('click', showHexList);
+  hexGenPanel.appendChild(list);
+
+  const map = document.createElement('button');
+  map.className = 'menu-option';
+  map.textContent = 'Hex Map';
+  map.addEventListener('click', showHexMap);
+  hexGenPanel.appendChild(map);
+
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', () => {
+    hexGenPanel.style.display = 'none';
+    showHexMenu();
+  });
+  hexGenPanel.appendChild(back);
+}
+
+async function showHexList() {
+  const hx = await fetch('/api/hexes').then(r => r.json());
+  hexGenPanel.innerHTML = '';
+  Object.keys(hx).sort().forEach(num => {
+    const btn = document.createElement('button');
+    btn.className = 'menu-option';
+    btn.textContent = num;
+    btn.addEventListener('click', () => editHex(num));
+    hexGenPanel.appendChild(btn);
+  });
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', showHexMenu);
+  hexGenPanel.appendChild(back);
+}
+
+function editHex(num) {
+  fetch('/api/hexes')
+    .then(r => r.json())
+    .then(all => {
+      const hx = all[num];
+      if (!hx) return;
+      hexGenPanel.innerHTML = '';
+      const form = document.createElement('form');
+      Object.entries(hx).forEach(([k, v]) => {
+        const f = document.createElement('div');
+        f.className = 'form-field';
+        f.innerHTML = `<label>${k}</label><input name="${k}" value="${v}" />`;
+        form.appendChild(f);
+      });
+      const submit = document.createElement('button');
+      submit.className = 'menu-option';
+      submit.textContent = 'Save';
+      form.appendChild(submit);
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = {};
+        new FormData(form).forEach((v, k) => (data[k] = v));
+        await fetch('/api/hex/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        showHexList();
+      });
+      hexGenPanel.appendChild(form);
+      const back = document.createElement('button');
+      back.className = 'menu-option';
+      back.textContent = 'Back';
+      back.addEventListener('click', showHexList);
+      hexGenPanel.appendChild(back);
+    });
+}
+
+function showHexMap() {
+  hexGenPanel.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.id = 'hex-grid';
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+  for (let i = 1; i <= 25; i++) {
+    const num = i.toString().padStart(3, '0');
+    const cell = document.createElement('button');
+    cell.className = 'menu-option';
+    cell.textContent = num;
+    cell.addEventListener('click', () => editHex(num));
+    grid.appendChild(cell);
+  }
+  hexGenPanel.appendChild(grid);
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', showHexMenu);
+  hexGenPanel.appendChild(back);
 }
 
 async function showHexGenerator() {
@@ -693,11 +864,12 @@ async function showStory() {
   });
   const form = document.createElement('form');
   form.id = 'story-form';
+  const isGuide = !currentCharacter;
   form.innerHTML = `
     <div class="form-field">
       <select id="story-role">
         <option value="Player">Player</option>
-        <option value="Guide">Guide</option>
+        ${isGuide ? '<option value="Guide">Guide</option>' : ''}
         <option value="Character">Character</option>
         <option value="Story">Story</option>
       </select>
@@ -770,8 +942,8 @@ function handleAction(action) {
     case 'showMap':
       showMap();
       break;
-    case 'showHexGen':
-      showHexGenerator();
+    case 'showHexMenu':
+      showHexMenu();
       break;
     case 'showOffers':
       showOffers();
