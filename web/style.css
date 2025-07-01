@@ -43,6 +43,10 @@ body {
   flex: 2 1 70%;
 }
 
+#story {
+  flex: 2 1 70%;
+}
+
 #menu {
   flex: 1 1 30%;
   display: flex;

@@ -6,6 +6,19 @@ const yaml = require('js-yaml');
 const port = process.env.PORT || 3000;
 const baseDir = path.join(__dirname, 'web');
 const dataDir = path.join(__dirname, 'data');
+const partyPath = path.join(dataDir, 'party.json');
+
+function loadParty() {
+  try {
+    return JSON.parse(fs.readFileSync(partyPath, 'utf8'));
+  } catch {
+    return { members: [], actions: {} };
+  }
+}
+
+function saveParty(p) {
+  fs.writeFileSync(partyPath, JSON.stringify(p, null, 2), 'utf8');
+}
 
 function getMime(file) {
   const ext = path.extname(file);
@@ -58,6 +71,87 @@ const server = http.createServer((req, res) => {
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Failed to save story');
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'GET' && req.url === '/api/party') {
+    const party = loadParty();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(party));
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/party/join') {
+    let body = '';
+    req.on('data', c => (body += c));
+    req.on('end', () => {
+      try {
+        const { name } = JSON.parse(body);
+        const party = loadParty();
+        if (!party.members.includes(name)) {
+          party.members.push(name);
+        }
+        saveParty(party);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(party));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to join party');
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/party/leave') {
+    let body = '';
+    req.on('data', c => (body += c));
+    req.on('end', () => {
+      try {
+        const { name } = JSON.parse(body);
+        const party = loadParty();
+        party.members = party.members.filter(m => m !== name);
+        delete party.actions[name];
+        saveParty(party);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(party));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to leave party');
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/party/action') {
+    let body = '';
+    req.on('data', c => (body += c));
+    req.on('end', () => {
+      try {
+        const { name, action } = JSON.parse(body);
+        const party = loadParty();
+        party.actions[name] = action;
+        saveParty(party);
+
+        const allSelected = party.members.length > 0 && party.members.every(m => party.actions[m]);
+        if (allSelected) {
+          const actionsText = party.members.map(m => `${m}: ${party.actions[m]}`).join(', ');
+          const allTravel = party.members.every(m => party.actions[m] === 'travel');
+          const line = allTravel
+            ? `System: All party members chose to travel. Guide, roll for travel events.`
+            : `System: Party actions - ${actionsText}. Guide, resolve results.`;
+          const storyPath = path.join(dataDir, 'story.txt');
+          fs.appendFileSync(storyPath, line + '\n', 'utf8');
+          party.actions = {};
+          saveParty(party);
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(party));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to set action');
       }
     });
     return;
