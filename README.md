@@ -48,7 +48,7 @@ in a browser to try a simple menu styled in the spirit of classic text RPGs.
 The UI uses the [Jacquard 24](https://fonts.google.com/specimen/Jacquard+24)
 font from Google Fonts.
 
-**Note:** Features like creating new characters or editing hexes require the
+**Note:** Features like creating new characters or editing map notes require the
 API endpoints served by `server.js`. Make sure the server is running before
 using these options.
 
@@ -64,3 +64,9 @@ node server.js
 The server listens on the port defined by the `PORT` environment variable (or
 `3000` by default) and provides a landing page with links to the player and
 guide options.
+
+## Map
+
+The web interface includes a simple hex map accessed from the Player or Guide
+menus. Launch the server with `node server.js` and open `web/index.html`.
+Choose **Map** from a menu to open the grid and record notes about each hex.
