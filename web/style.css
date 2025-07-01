@@ -27,6 +27,11 @@ body {
   gap: 1rem;
 }
 
+/* Ensure the menu always stays on the right */
+#menu {
+  order: 2;
+}
+
 #creator {
   flex: 2 1 70%;
 }
@@ -36,6 +41,7 @@ body {
 }
 
 .panel {
+  order: 1;
   background: #26232f;
   padding: 1rem;
   border: 2px solid #4c4668;
@@ -51,59 +57,6 @@ body {
   flex: 2 1 70%;
 }
 
-#hex-gen {
-  flex: 2 1 70%;
-  display: flex;
-  gap: 1rem;
-}
-
-#hex-content {
-  flex: 2 1 70%;
-}
-
-#hex-menu {
-  flex: 1 1 30%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-
-#player-map button {
-  width: 100%;
-}
-
-#hex-grid button {
-  width: 100%;
-}
-
-#hex-grid {
-  display: flex;
-  flex-direction: column;
-  row-gap: 4px;
-}
-
-.hex-row {
-  display: flex;
-  column-gap: 4px;
-}
-
-.hex-row.offset {
-  margin-left: 30px;
-}
-
-.hex-cell {
-  width: 60px;
-  height: 52px;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  background: #3b364d;
-  color: #e0e0e0;
-  border: 2px solid #4c4668;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
 
 #rule-content {
   flex: 2 1 70%;
