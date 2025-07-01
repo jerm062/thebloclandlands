@@ -1,5 +1,3 @@
-// Hex and biome generator features removed
-
 const output = document.getElementById('output');
 const menu = document.getElementById('menu');
 const creator = document.getElementById('creator');
