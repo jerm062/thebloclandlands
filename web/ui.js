@@ -6,7 +6,6 @@ const storyPanel = document.getElementById('story');
 const hexGenPanel = document.getElementById('hex-gen');
 const hexContent = document.getElementById('hex-content');
 const hexMenu = document.getElementById('hex-menu');
-const hexLegend = document.getElementById('hex-legend');
 
 let builderData = null;
 let currentCharacter = null;
@@ -34,11 +33,6 @@ function append(text) {
   output.scrollTop = output.scrollHeight;
 }
 
-function hideHexLegend() {
-  hexLegend.style.display = 'none';
-  hexLegend.innerHTML = '';
-}
-
 function getMarkerString(markers = {}) {
   let str = '';
   if (markers.current_location) str += '#';
@@ -49,16 +43,7 @@ function getMarkerString(markers = {}) {
   return str;
 }
 
-function updateHexLegend() {
-  hexLegend.innerHTML = `
-    <p># : Current Location</p>
-    <p>X : Mission Location</p>
-    <p>! : Known/Revealed Info</p>
-    <p>? : Side Mission</p>
-    <p>+ : Hex Traversed</p>
-  `;
-  hexLegend.style.display = 'block';
-}
+
 
 async function showCreatorForm() {
   output.style.display = 'none';
@@ -435,7 +420,7 @@ const menus = {
     { text: 'Rulebook', action: 'showRulebook' }
   ],
   player: [
-    { text: 'New Character', action: 'newPlayer' },
+    { text: 'New Player', action: 'newPlayer' },
     { text: 'Load Game', action: 'loadPlayer' },
     { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
@@ -685,7 +670,6 @@ function showHexMenu() {
   hexGenPanel.style.display = 'flex';
   hexContent.innerHTML = '';
   hexMenu.innerHTML = '';
-  updateHexLegend();
 
   const list = document.createElement('button');
   list.className = 'menu-option';
@@ -704,7 +688,6 @@ function showHexMenu() {
   back.textContent = 'Back';
   back.addEventListener('click', () => {
     hexGenPanel.style.display = 'none';
-    hideHexLegend();
     showMenu('guide');
   });
   hexMenu.appendChild(back);
@@ -713,7 +696,6 @@ function showHexMenu() {
 async function showHexList() {
   const hx = await fetch('/api/hexes').then(r => r.json());
   hexContent.innerHTML = '';
-  updateHexLegend();
   for (let i = 1; i <= 25; i++) {
     const num = i.toString().padStart(3, '0');
     const btn = document.createElement('button');
@@ -730,67 +712,94 @@ async function showHexList() {
   hexContent.appendChild(back);
 }
 
-function editHex(num) {
-  fetch('/api/hexes')
-    .then(r => r.json())
-    .then(all => {
-      const hx = all[num] || { hex_number: num, notes: '', markers: {} };
-      hexContent.innerHTML = '';
-      updateHexLegend();
-      const form = document.createElement('form');
+async function editHex(num) {
+  const all = await fetch('/api/hexes').then(r => r.json());
+  let hx = all[num];
+  if (!hx) {
+    hx = await fetch('/api/hex/generate?hex=' + num).then(r => r.json());
+  }
+  hx.notes = hx.notes || '';
+  hx.markers = hx.markers || {};
+  hexContent.innerHTML = '';
 
-      const noteField = document.createElement('div');
-      noteField.className = 'form-field';
-      noteField.innerHTML = `<label>Notes</label><input name="notes" value="${hx.notes || ''}" />`;
-      form.appendChild(noteField);
+  const form = document.createElement('form');
 
-      const marks = [
-        ['current_location', '#'],
-        ['mission', 'X'],
-        ['revealed_info', '!'],
-        ['side_mission', '?'],
-        ['traversed', '+']
-      ];
-      marks.forEach(([m, sym]) => {
-        const d = document.createElement('div');
-        d.className = 'form-field';
-        const checked = hx.markers && hx.markers[m] ? 'checked' : '';
-        d.innerHTML = `<label><input type="checkbox" name="mark-${m}" ${checked}/> ${sym}</label>`;
-        form.appendChild(d);
-      });
+  const info = document.createElement('div');
+  info.className = 'form-field';
+  info.innerHTML = `
+    <p>Biome: ${hx.biome}</p>
+    <p>Terrain: ${hx.terrain}</p>
+    <p>Quality: ${hx.quality}</p>
+    <p>Flora: ${hx.flora}</p>
+    <p>Fauna: ${hx.fauna}</p>
+    <p>Fish: ${hx.fish}</p>
+    <p>Animal Feature: ${hx.animalFeature}</p>
+    <p>Flora Feature: ${hx.floraFeature}</p>
+  `;
+  form.appendChild(info);
 
-      const submit = document.createElement('button');
-      submit.className = 'menu-option';
-      submit.textContent = 'Save';
-      form.appendChild(submit);
+  const noteField = document.createElement('div');
+  noteField.className = 'form-field';
+  noteField.innerHTML = `<label>Notes</label><input name="notes" value="${hx.notes}" />`;
+  form.appendChild(noteField);
 
-      form.addEventListener('submit', async e => {
-        e.preventDefault();
-        const data = { hex_number: num, notes: form.querySelector('[name="notes"]').value, markers: {} };
-        marks.forEach(([m]) => {
-          data.markers[m] = form.querySelector(`[name="mark-${m}"]`).checked;
-        });
-        await fetch('/api/hex/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        showHexList();
-      });
+  const marks = [
+    ['current_location', '#'],
+    ['mission', 'X'],
+    ['revealed_info', '!'],
+    ['side_mission', '?'],
+    ['traversed', '+']
+  ];
+  marks.forEach(([m, sym]) => {
+    const d = document.createElement('div');
+    d.className = 'form-field';
+    const checked = hx.markers[m] ? 'checked' : '';
+    d.innerHTML = `<label><input type="checkbox" name="mark-${m}" ${checked}/> ${sym}</label>`;
+    form.appendChild(d);
+  });
 
-      hexContent.appendChild(form);
-      const back = document.createElement('button');
-      back.className = 'menu-option';
-      back.textContent = 'Back';
-      back.addEventListener('click', showHexList);
-      hexContent.appendChild(back);
+  const submit = document.createElement('button');
+  submit.className = 'menu-option';
+  submit.textContent = 'Save';
+  form.appendChild(submit);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {
+      hex_number: num,
+      biome: hx.biome,
+      terrain: hx.terrain,
+      quality: hx.quality,
+      flora: hx.flora,
+      fauna: hx.fauna,
+      fish: hx.fish,
+      animalFeature: hx.animalFeature,
+      floraFeature: hx.floraFeature,
+      notes: form.querySelector('[name="notes"]').value,
+      markers: {}
+    };
+    marks.forEach(([m]) => {
+      data.markers[m] = form.querySelector(`[name="mark-${m}"]`).checked;
     });
+    await fetch('/api/hex/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    showHexList();
+  });
+
+  hexContent.appendChild(form);
+  const back = document.createElement('button');
+  back.className = 'menu-option';
+  back.textContent = 'Back';
+  back.addEventListener('click', showHexList);
+  hexContent.appendChild(back);
 }
 
 async function showHexMap() {
   const hx = await fetch('/api/hexes').then(r => r.json());
   hexContent.innerHTML = '';
-  updateHexLegend();
   const grid = document.createElement('div');
   grid.id = 'hex-grid';
   for (let r = 0; r < 5; r++) {
