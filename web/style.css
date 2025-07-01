@@ -51,6 +51,18 @@ body {
   flex: 2 1 70%;
 }
 
+#hex-gen {
+  flex: 2 1 70%;
+}
+
+#player-map button {
+  width: 100%;
+}
+
+#hex-grid button {
+  width: 100%;
+}
+
 #rule-content {
   flex: 2 1 70%;
 }
