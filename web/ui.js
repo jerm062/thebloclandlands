@@ -296,6 +296,12 @@ async function loadPlayer() {
   showMenu('character');
 }
 
+function clearCharacter() {
+  localStorage.removeItem('currentCharacter');
+  currentCharacter = null;
+  showMenu('player');
+}
+
 async function showPlayerManager() {
   output.style.display = 'none';
   menu.style.display = 'none';
@@ -448,6 +454,7 @@ const menus = {
     { text: 'Journal', action: 'showJournal' },
     { text: 'Map', action: 'showMap' },
     { text: 'Caravan Party', action: 'showParty' },
+    { text: 'Switch Character', action: 'clearCharacter' },
     { text: 'Back', action: 'showMain' }
   ]
 };
@@ -680,12 +687,6 @@ function showHexMenu() {
   hexMenu.innerHTML = '';
   updateHexLegend();
 
-  const gen = document.createElement('button');
-  gen.className = 'menu-option';
-  gen.textContent = 'Generate Hex';
-  gen.addEventListener('click', showHexGenerator);
-  hexMenu.appendChild(gen);
-
   const list = document.createElement('button');
   list.className = 'menu-option';
   list.textContent = 'Hex List';
@@ -733,21 +734,16 @@ function editHex(num) {
   fetch('/api/hexes')
     .then(r => r.json())
     .then(all => {
-      const hx = all[num];
+      const hx = all[num] || { hex_number: num, notes: '', markers: {} };
       hexContent.innerHTML = '';
       updateHexLegend();
-      if (!hx) {
-        showHexGenerator(num);
-        return;
-      }
       const form = document.createElement('form');
-      const fields = ['biome', 'terrain', 'quality', 'flora', 'fauna', 'fish'];
-      fields.forEach(k => {
-        const f = document.createElement('div');
-        f.className = 'form-field';
-        f.innerHTML = `<label>${k}</label><input name="${k}" value="${hx[k] || ''}" />`;
-        form.appendChild(f);
-      });
+
+      const noteField = document.createElement('div');
+      noteField.className = 'form-field';
+      noteField.innerHTML = `<label>Notes</label><input name="notes" value="${hx.notes || ''}" />`;
+      form.appendChild(noteField);
+
       const marks = [
         ['current_location', '#'],
         ['mission', 'X'],
@@ -762,16 +758,15 @@ function editHex(num) {
         d.innerHTML = `<label><input type="checkbox" name="mark-${m}" ${checked}/> ${sym}</label>`;
         form.appendChild(d);
       });
+
       const submit = document.createElement('button');
       submit.className = 'menu-option';
       submit.textContent = 'Save';
       form.appendChild(submit);
+
       form.addEventListener('submit', async e => {
         e.preventDefault();
-        const data = { hex_number: num, markers: {} };
-        fields.forEach(k => {
-          data[k] = form.querySelector(`[name="${k}"]`).value;
-        });
+        const data = { hex_number: num, notes: form.querySelector('[name="notes"]').value, markers: {} };
         marks.forEach(([m]) => {
           data.markers[m] = form.querySelector(`[name="mark-${m}"]`).checked;
         });
@@ -782,6 +777,7 @@ function editHex(num) {
         });
         showHexList();
       });
+
       hexContent.appendChild(form);
       const back = document.createElement('button');
       back.className = 'menu-option';
@@ -820,64 +816,6 @@ async function showHexMap() {
   hexContent.appendChild(back);
 }
 
-async function showHexGenerator(num) {
-  output.style.display = 'none';
-  creator.style.display = 'none';
-  guideEdit.style.display = 'none';
-  storyPanel.style.display = 'none';
-  hexGenPanel.style.display = 'flex';
-  hexContent.innerHTML = '';
-  hexMenu.innerHTML = '';
-  updateHexLegend();
-
-  const genBtn = document.createElement('button');
-  genBtn.className = 'menu-option';
-  genBtn.textContent = 'Generate Hex';
-  hexMenu.appendChild(genBtn);
-
-  const form = document.createElement('form');
-  form.style.display = 'none';
-  hexContent.appendChild(form);
-
-  genBtn.addEventListener('click', async () => {
-    const url = num ? `/api/hex/generate?hex=${num}` : '/api/hex/generate';
-    const hx = await fetch(url).then(r => r.json());
-    form.innerHTML = '';
-    form.style.display = 'block';
-    Object.entries(hx).forEach(([k, v]) => {
-      const f = document.createElement('div');
-      f.className = 'form-field';
-      f.innerHTML = `<label>${k}</label><input name="${k}" value="${v}" />`;
-      form.appendChild(f);
-    });
-    const submit = document.createElement('button');
-    submit.className = 'menu-option';
-    submit.textContent = 'Add to Hex';
-    form.appendChild(submit);
-  });
-
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const data = { hex_number: num };
-    new FormData(form).forEach((v, k) => (data[k] = v));
-    await fetch('/api/hex/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    showHexList();
-  });
-
-  const back = document.createElement('button');
-  back.className = 'menu-option';
-  back.textContent = 'Back';
-  back.addEventListener('click', () => {
-    hexGenPanel.style.display = 'none';
-    hideHexLegend();
-    showMenu('guide');
-  });
-  hexMenu.appendChild(back);
-}
 
 async function showOffers() {
   storyPanel.style.display = 'none';
@@ -1023,6 +961,9 @@ function handleAction(action) {
       break;
     case 'showParty':
       showParty();
+      break;
+    case 'clearCharacter':
+      clearCharacter();
       break;
     default:
       append(`Unknown action: ${action}`);
