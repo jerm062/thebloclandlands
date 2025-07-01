@@ -82,6 +82,60 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'PUT' && req.url.startsWith('/api/characters')) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const name = urlObj.searchParams.get('name');
+    let body = '';
+    req.on('data', chunk => (body += chunk));
+    req.on('end', () => {
+      try {
+        const updates = JSON.parse(body);
+        const charPath = path.join(dataDir, 'characters.yaml');
+        let chars = {};
+        if (fs.existsSync(charPath)) {
+          chars = yaml.load(fs.readFileSync(charPath, 'utf8')) || {};
+        }
+        if (!chars[name]) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('Character not found');
+          return;
+        }
+        chars[name] = { ...chars[name], ...updates };
+        fs.writeFileSync(charPath, yaml.dump(chars), 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(chars[name]));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to update character');
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'DELETE' && req.url.startsWith('/api/characters')) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const name = urlObj.searchParams.get('name');
+    const charPath = path.join(dataDir, 'characters.yaml');
+    try {
+      const chars = fs.existsSync(charPath)
+        ? yaml.load(fs.readFileSync(charPath, 'utf8')) || {}
+        : {};
+      if (!chars[name]) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Character not found');
+        return;
+      }
+      delete chars[name];
+      fs.writeFileSync(charPath, yaml.dump(chars), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Failed to delete character');
+    }
+    return;
+  }
+
   const reqPath = req.url === '/' ? '/index.html' : req.url;
   const filePath = path.join(baseDir, reqPath);
 
