@@ -53,7 +53,24 @@ async function showCreatorForm() {
   storyPanel.style.display = 'none';
   creator.innerHTML = '';
 
-  builderData = await fetch('/api/builder').then(r => r.json());
+  try {
+    const res = await fetch('/api/builder');
+    if (!res.ok) throw new Error('Failed to load');
+    builderData = await res.json();
+  } catch (err) {
+    creator.textContent = 'Failed to load character builder. Is the server running?';
+    const backBtn = document.createElement('button');
+    backBtn.className = 'menu-option';
+    backBtn.textContent = 'Back';
+    backBtn.addEventListener('click', () => {
+      creator.style.display = 'none';
+      output.style.display = '';
+      menu.style.display = 'flex';
+      showMenu('player');
+    });
+    creator.appendChild(backBtn);
+    return;
+  }
 
   const form = document.createElement('form');
   form.id = 'charForm';
@@ -726,17 +743,30 @@ async function editHex(num) {
 
   const info = document.createElement('div');
   info.className = 'form-field';
-  info.innerHTML = `
-    <p>Biome: ${hx.biome}</p>
-    <p>Terrain: ${hx.terrain}</p>
-    <p>Quality: ${hx.quality}</p>
-    <p>Flora: ${hx.flora}</p>
-    <p>Fauna: ${hx.fauna}</p>
-    <p>Fish: ${hx.fish}</p>
-    <p>Animal Feature: ${hx.animalFeature}</p>
-    <p>Flora Feature: ${hx.floraFeature}</p>
-  `;
+  function renderInfo() {
+    info.innerHTML = `
+      <p>Biome: ${hx.biome}</p>
+      <p>Terrain: ${hx.terrain}</p>
+      <p>Quality: ${hx.quality}</p>
+      <p>Flora: ${hx.flora}</p>
+      <p>Fauna: ${hx.fauna}</p>
+      <p>Fish: ${hx.fish}</p>
+      <p>Animal Feature: ${hx.animalFeature}</p>
+      <p>Flora Feature: ${hx.floraFeature}</p>
+    `;
+  }
+  renderInfo();
   form.appendChild(info);
+
+  const genBtn = document.createElement('button');
+  genBtn.className = 'menu-option';
+  genBtn.type = 'button';
+  genBtn.textContent = 'Generate';
+  genBtn.addEventListener('click', async () => {
+    hx = await fetch('/api/hex/generate?hex=' + num).then(r => r.json());
+    renderInfo();
+  });
+  form.appendChild(genBtn);
 
   const noteField = document.createElement('div');
   noteField.className = 'form-field';
