@@ -1,9 +1,11 @@
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const yaml = require('js-yaml');
 
 const port = process.env.PORT || 3000;
 const baseDir = path.join(__dirname, 'web');
+const dataDir = path.join(__dirname, 'data');
 
 function getMime(file) {
   const ext = path.extname(file);
@@ -20,6 +22,43 @@ function getMime(file) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.method === 'GET' && req.url === '/api/builder') {
+    const builderPath = path.join(dataDir, 'character_builder.yaml');
+    try {
+      const data = fs.readFileSync(builderPath, 'utf8');
+      const json = yaml.load(data).character_builder;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(json));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Failed to load builder');
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/characters') {
+    let body = '';
+    req.on('data', chunk => (body += chunk));
+    req.on('end', () => {
+      try {
+        const { name, data } = JSON.parse(body);
+        const charPath = path.join(dataDir, 'characters.yaml');
+        let chars = {};
+        if (fs.existsSync(charPath)) {
+          chars = yaml.load(fs.readFileSync(charPath, 'utf8')) || {};
+        }
+        chars[name] = data;
+        fs.writeFileSync(charPath, yaml.dump(chars), 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to save character');
+      }
+    });
+    return;
+  }
+
   const reqPath = req.url === '/' ? '/index.html' : req.url;
   const filePath = path.join(baseDir, reqPath);
 
