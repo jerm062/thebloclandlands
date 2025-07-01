@@ -36,6 +36,33 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && req.url === '/api/story') {
+    const storyPath = path.join(dataDir, 'story.txt');
+    const text = fs.existsSync(storyPath) ? fs.readFileSync(storyPath, 'utf8') : '';
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end(text);
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/story') {
+    let body = '';
+    req.on('data', chunk => (body += chunk));
+    req.on('end', () => {
+      try {
+        const { role, text } = JSON.parse(body);
+        const line = `${role}: ${text}\n`;
+        const storyPath = path.join(dataDir, 'story.txt');
+        fs.appendFileSync(storyPath, line, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed to save story');
+      }
+    });
+    return;
+  }
+
   if (req.method === 'GET' && req.url.startsWith('/api/characters')) {
     const urlObj = new URL(req.url, `http://${req.headers.host}`);
     const name = urlObj.searchParams.get('name');

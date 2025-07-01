@@ -2,6 +2,7 @@ const output = document.getElementById('output');
 const menu = document.getElementById('menu');
 const creator = document.getElementById('creator');
 const guideEdit = document.getElementById('guide-edit');
+const storyPanel = document.getElementById('story');
 
 let builderData = null;
 let currentCharacter = null;
@@ -18,6 +19,7 @@ async function showCreatorForm() {
   menu.style.display = 'none';
   creator.style.display = 'block';
   guideEdit.style.display = 'none';
+  storyPanel.style.display = 'none';
   creator.innerHTML = '';
 
   builderData = await fetch('/api/builder').then(r => r.json());
@@ -248,6 +250,7 @@ async function showPlayerManager() {
   output.style.display = 'none';
   menu.style.display = 'none';
   guideEdit.style.display = 'block';
+  storyPanel.style.display = 'none';
   guideEdit.innerHTML = '';
 
   const chars = await fetch('/api/characters').then(r => r.json());
@@ -355,11 +358,13 @@ const menus = {
   player: [
     { text: 'New Player', action: 'newPlayer' },
     { text: 'Load Game', action: 'loadPlayer' },
+    { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
   ],
   guide: [
     { text: 'Start Guide Session', action: 'startGuide' },
     { text: 'Manage Players', action: 'managePlayers' },
+    { text: 'Story Dialogue', action: 'showStory' },
     { text: 'Back', action: 'showMain' }
   ],
   character: [
@@ -388,6 +393,8 @@ function showSheet() {
     append('No character loaded.');
     return;
   }
+  storyPanel.style.display = 'none';
+  output.style.display = '';
   output.innerHTML = '';
   append('--- Character Sheet ---');
   Object.entries(currentCharacter).forEach(([k, v]) => {
@@ -408,6 +415,8 @@ function showInventory() {
     append('No character loaded.');
     return;
   }
+  storyPanel.style.display = 'none';
+  output.style.display = '';
   output.innerHTML = '';
   const items = currentCharacter.inventory || [];
   const max = currentCharacter.max_slots || 12;
@@ -420,13 +429,65 @@ function showInventory() {
 }
 
 function showJournal() {
+  storyPanel.style.display = 'none';
+  output.style.display = '';
   output.innerHTML = '';
   append('Journal feature coming soon.');
 }
 
 function showMap() {
+  storyPanel.style.display = 'none';
+  output.style.display = '';
   output.innerHTML = '';
   append('Map feature coming soon.');
+}
+
+async function showStory() {
+  output.style.display = 'none';
+  creator.style.display = 'none';
+  guideEdit.style.display = 'none';
+  menu.style.display = 'flex';
+  storyPanel.style.display = 'block';
+  storyPanel.innerHTML = '';
+  const res = await fetch('/api/story');
+  const text = await res.text();
+  const lines = text.trim() ? text.trim().split('\n') : [];
+  lines.forEach(line => {
+    const p = document.createElement('p');
+    p.textContent = line;
+    storyPanel.appendChild(p);
+  });
+  const form = document.createElement('form');
+  form.id = 'story-form';
+  form.innerHTML = `
+    <div class="form-field">
+      <select id="story-role">
+        <option value="Player">Player</option>
+        <option value="Guide">Guide</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <input id="story-text" type="text" required />
+    </div>
+    <button class="menu-option" type="submit">Add Line</button>
+  `;
+  storyPanel.appendChild(form);
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const role = form.querySelector('#story-role').value;
+    const txtEl = form.querySelector('#story-text');
+    const line = txtEl.value.trim();
+    if (!line) return;
+    await fetch('/api/story', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role, text: line })
+    });
+    const p = document.createElement('p');
+    p.textContent = `${role}: ${line}`;
+    storyPanel.insertBefore(p, form);
+    txtEl.value = '';
+  });
 }
 
 function handleAction(action) {
@@ -472,6 +533,9 @@ function handleAction(action) {
       break;
     case 'showMap':
       showMap();
+      break;
+    case 'showStory':
+      showStory();
       break;
     default:
       append(`Unknown action: ${action}`);
