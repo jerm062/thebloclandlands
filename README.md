@@ -64,3 +64,9 @@ node server.js
 The server listens on the port defined by the `PORT` environment variable (or
 `3000` by default) and provides a landing page with links to the player and
 guide options.
+
+## Hex Exploration Map
+
+A minimalist map interface is available at `web/hexmap.html`. Launch the server
+with `node server.js` and open this file in a browser. Each hex can store a
+note describing landmarks or rumors discovered during play.
