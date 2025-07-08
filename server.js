@@ -12,6 +12,17 @@ const partyPath = path.join(dataDir, 'party.json');
 const offersPath = path.join(dataDir, 'offers.json');
 const hexGenPath = path.join(dataDir, 'hex_generator.yaml');
 const hexesPath = path.join(dataDir, 'hexes.yaml');
+const npcsPath = path.join(dataDir, 'npcs.yaml');
+const itemsPath = path.join(dataDir, 'items.yaml');
+const bestiaryPath = path.join(dataDir, 'bestiary.yaml');
+const dungeonsPath = path.join(dataDir, 'dungeons.yaml');
+const mapsPath = path.join(dataDir, 'maps.yaml');
+
+const npcData = createYamlHandlers(npcsPath);
+const itemData = createYamlHandlers(itemsPath);
+const bestiaryData = createYamlHandlers(bestiaryPath);
+const dungeonData = createYamlHandlers(dungeonsPath);
+const mapData = createYamlHandlers(mapsPath);
 
 function loadParty() {
   try {
@@ -61,6 +72,107 @@ function loadHexes() {
 
 function saveHexes(hx) {
   fs.writeFileSync(hexesPath, yaml.dump(hx), 'utf8');
+}
+
+function loadYaml(p) {
+  try {
+    return yaml.load(fs.readFileSync(p, 'utf8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveYaml(p, data) {
+  fs.writeFileSync(p, yaml.dump(data), 'utf8');
+}
+
+function createYamlHandlers(basePath) {
+  return {
+    getAll() { return loadYaml(basePath); },
+    get(name) {
+      const all = loadYaml(basePath); return all[name];
+    },
+    set(name, data) {
+      const all = loadYaml(basePath); all[name] = data; saveYaml(basePath, all);
+    },
+    update(name, updates) {
+      const all = loadYaml(basePath); if (!all[name]) return null;
+      all[name] = { ...all[name], ...updates }; saveYaml(basePath, all); return all[name];
+    },
+    remove(name) {
+      const all = loadYaml(basePath); if (!all[name]) return false;
+      delete all[name]; saveYaml(basePath, all); return true;
+    }
+  };
+}
+
+function handleYamlApi(req, res, prefix, data) {
+  if (req.method === 'GET' && req.url.startsWith(prefix)) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const name = urlObj.searchParams.get('name');
+    const result = name ? data.get(name) : data.getAll();
+    if (name && !result) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not found');
+      return true;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return true;
+  }
+  if (req.method === 'POST' && req.url === prefix) {
+    let body = '';
+    req.on('data', c => (body += c));
+    req.on('end', () => {
+      try {
+        const { name, data: val } = JSON.parse(body);
+        data.set(name, val);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed');
+      }
+    });
+    return true;
+  }
+  if (req.method === 'PUT' && req.url.startsWith(prefix)) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const name = urlObj.searchParams.get('name');
+    let body = '';
+    req.on('data', c => (body += c));
+    req.on('end', () => {
+      try {
+        const updates = JSON.parse(body);
+        const updated = data.update(name, updates);
+        if (!updated) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('Not found');
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(updated));
+      } catch {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Failed');
+      }
+    });
+    return true;
+  }
+  if (req.method === 'DELETE' && req.url.startsWith(prefix)) {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const name = urlObj.searchParams.get('name');
+    const ok = data.remove(name);
+    if (!ok) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not found');
+      return true;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return true;
+  }
+  return false;
 }
 
 function getMime(file) {
@@ -118,6 +230,12 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+
+  if (handleYamlApi(req, res, '/api/npcs', npcData)) return;
+  if (handleYamlApi(req, res, '/api/items', itemData)) return;
+  if (handleYamlApi(req, res, '/api/bestiary', bestiaryData)) return;
+  if (handleYamlApi(req, res, '/api/dungeons', dungeonData)) return;
+  if (handleYamlApi(req, res, '/api/maps', mapData)) return;
 
   if (req.method === 'GET' && req.url === '/api/hex-generator') {
     const data = loadHexGen();

@@ -70,3 +70,9 @@ guide options.
 A minimalist map interface is available at `web/hexmap.html`. Launch the server
 with `node server.js` and open this file in a browser. Each hex can store a
 note describing landmarks or rumors discovered during play.
+
+## OSE Companion
+
+`web/ose.html` contains a proof-of-concept interface inspired by Roadwarden.
+It separates player and dungeon master views and interacts with new API
+endpoints for NPCs, items, bestiary entries and more.
