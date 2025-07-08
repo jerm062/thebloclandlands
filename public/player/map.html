@@ -1,11 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="/style.css">
   <meta charset="UTF-8">
   <title>Map</title>
 </head>
 <body>
   <h1>Map</h1>
-  <p>Coming soon...</p>
+  <div id="grid" class="grid"></div>
+  <script>
+  (async () => {
+    const params = new URLSearchParams(location.search);
+    const name = params.get('name');
+    if (!name) return;
+    const res = await fetch('/api/maps?name=' + encodeURIComponent(name));
+    if (res.status !== 200) return;
+    const data = await res.json();
+    const cells = data.grid || [];
+    const gridEl = document.getElementById('grid');
+    for (let i = 0; i < 100; i++) {
+      const c = document.createElement('div');
+      c.className = 'cell';
+      if (cells[i]) c.classList.add('wall');
+      gridEl.appendChild(c);
+    }
+  })();
+  </script>
 </body>
 </html>

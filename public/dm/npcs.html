@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="/style.css">
   <meta charset="UTF-8">
   <title>npcs</title>
 </head>
-<body>
+<body data-resource="npcs">
   <h1>npcs Editor</h1>
-  <p>Coming soon...</p>
+  <div id="list" class="list"></div>
+  <form id="form">
+    <div>Name: <input id="name"></div>
+    <div>Data (JSON):<br><textarea id="data" rows="5" cols="40"></textarea></div>
+    <button type="submit">Save</button>
+  </form>
+  <script src="editor.js"></script>
 </body>
 </html>

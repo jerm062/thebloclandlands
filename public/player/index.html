@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="/style.css">
   <meta charset="UTF-8">
   <title>Create Character</title>
 </head>
@@ -19,6 +20,16 @@
     <button type="submit">Create</button>
   </form>
 <script>
+  const params = new URLSearchParams(location.search);
+  const defName = params.get('name');
+  if (defName) {
+    const res = await fetch('/api/characters?name=' + encodeURIComponent(defName));
+    if (res.status === 200) {
+      location.href = '/player/character.html?name=' + encodeURIComponent(defName);
+      return;
+    }
+    document.getElementById('name').value = defName;
+  }
   document.getElementById('create').onsubmit = async (e) => {
     e.preventDefault();
     const name = document.getElementById('name').value;

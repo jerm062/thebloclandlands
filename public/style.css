@@ -1,0 +1,62 @@
+body {
+  background-color: #111;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  margin: 0;
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  color: #fa0;
+  margin-top: 0;
+}
+
+a { color: #6cf; }
+
+label, input, select, button, textarea {
+  font-family: inherit;
+  font-size: 1em;
+  margin: 5px 0;
+}
+
+input, select, textarea {
+  background: #222;
+  color: #eee;
+  border: 1px solid #555;
+  padding: 4px;
+}
+
+button {
+  background: #333;
+  border: 1px solid #777;
+  color: #eee;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+pre {
+  background: #222;
+  padding: 10px;
+  overflow: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 32px);
+  grid-template-rows: repeat(10, 32px);
+  gap: 2px;
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  background: #222;
+  border: 1px solid #555;
+}
+
+.cell.wall { background: #444; }
+.cell.start { background: #060; }
+.cell.end { background: #600; }
+
+.list div { margin-bottom: 4px; }
+.list button { margin-right: 5px; }
