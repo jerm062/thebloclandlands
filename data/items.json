@@ -1,0 +1,8 @@
+{
+  "Short Sword": {
+    "damage": "1d6"
+  },
+  "Potion of Healing": {
+    "effect": "restore 1d6 HP"
+  }
+}

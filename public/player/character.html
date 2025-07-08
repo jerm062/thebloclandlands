@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="/style.css">
   <meta charset="UTF-8">
   <title>Character Sheet</title>
 </head>
@@ -11,7 +12,15 @@
 (async () => {
   const params = new URLSearchParams(location.search);
   const name = params.get('name');
+  if (!name) {
+    location.href = '/player/index.html';
+    return;
+  }
   const res = await fetch('/api/characters?name=' + encodeURIComponent(name));
+  if (res.status === 404) {
+    location.href = '/player/index.html?name=' + encodeURIComponent(name);
+    return;
+  }
   const data = await res.json();
   document.getElementById('sheet').textContent = JSON.stringify(data, null, 2);
 })();
