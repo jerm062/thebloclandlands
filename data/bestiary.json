@@ -1,0 +1,14 @@
+{
+  "Orc": {
+    "hd": 1,
+    "ac": 13,
+    "att": "1d8",
+    "desc": "Savage humanoid"
+  },
+  "Goblin": {
+    "hd": 1,
+    "ac": 12,
+    "att": "1d6",
+    "desc": "Small trickster"
+  }
+}
