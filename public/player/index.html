@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Create Character</title>
+</head>
+<body>
+  <h1>Create Character</h1>
+  <form id="create">
+    <div>Name: <input type="text" id="name" required></div>
+    <div>Class:
+      <select id="class">
+        <option>Fighter</option>
+        <option>Magic-User</option>
+        <option>Cleric</option>
+        <option>Thief</option>
+      </select>
+    </div>
+    <button type="submit">Create</button>
+  </form>
+<script>
+  document.getElementById('create').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const cls = document.getElementById('class').value;
+    await fetch('/api/characters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data: { class: cls } })
+    });
+    location.href = '/player/character.html?name=' + encodeURIComponent(name);
+  };
+</script>
+</body>
+</html>
